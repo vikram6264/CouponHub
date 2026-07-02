@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CouponShare — Browse Coupons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ═══════════════════ NAVBAR ══════════════════════ -->
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">Coupon<span>Share</span></a>
+
+  <div class="nav-right">
+    <div class="pts-badge" id="ptsDisplay" style="display:none;">
+      <span class="pts-icon"></span>
+      <span id="ptsNum">0</span> pts
+    </div>
+    <div style="display:none;" id="authBtns">
+      <a href="login.html" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--text);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-right:8px;">Login</a>
+      <a href="register.html" style="background:var(--purple);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">Register</a>
+    </div>
+    <div id="userArea" style="display:none;position:relative;">
+      <div class="avatar" id="avatarBtn" onclick="toggleDD()">
+        <span id="avatarInitials">?</span>
+      </div>
+      <div class="avatar-dd" id="avatarDD">
+        <a href="browse.html">Home Page</a>
+        <a href="submit.html">Share a Coupon</a>
+        <a href="dashboard.html">Dashboard</a>
+        <hr>
+        <a href="#" class="dd-logout" onclick="logout()">Logout</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════════════════ SEARCH ══════════════════════ -->
+<div class="search-section">
+  <div class="search-row">
+    <input class="search-box" id="searchInput" type="text"
+      placeholder="Search coupons — Swiggy, Amazon, Paytm..."
+      oninput="onSearch()">
+    <button class="filter-btn" onclick="toggleFilterPanel()">
+      <span class="filter-icon"></span> Filter
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════════════ CATEGORIES ══════════════════ -->
+<div class="cats-row" id="catsRow">
+  <button class="cat active" onclick="selCat(this,'')">All</button>
+  <button class="cat" onclick="selCat(this,'Recharge')">
+    <span class="cat-icon"></span> Recharge
+  </button>
+  <button class="cat" onclick="selCat(this,'Food')">
+    <span class="cat-icon"></span> Food
+  </button>
+  <button class="cat" onclick="selCat(this,'Shopping')">
+    <span class="cat-icon"></span> Shopping
+  </button>
+  <button class="cat" onclick="selCat(this,'Travel')">
+    <span class="cat-icon"></span> Travel
+  </button>
+  <button class="cat" onclick="selCat(this,'Health')">
+    <span class="cat-icon"></span> Health
+  </button>
+  <button class="cat" onclick="selCat(this,'Entertainment')">
+    <span class="cat-icon"></span> Entertainment
+  </button>
+</div>
+
+<!-- ═══════════════════ STATS ═══════════════════════ -->
+<div class="stats-section">
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num purple" id="statTotal">—</div>
+      <div class="stat-lbl">Active coupons</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num teal" id="statClaims">—</div>
+      <div class="stat-lbl">Claimed today</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num amber" id="statSavings">—</div>
+      <div class="stat-lbl">Total savings</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ COUPON GRID ═════════════════ -->
+<div class="coupons-section">
+  <div class="section-title">Latest coupons</div>
+  <div class="coupons-grid" id="couponGrid">
+    <div class="loader"><div class="spinner"></div> Loading coupons...</div>
+  </div>
+</div>
+
+<!-- Load more -->
+<div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
+  <button class="load-more-btn" onclick="loadMore()">Load more coupons</button>
+</div>
+
+<!-- ═══════════════════ CTA BANNER ══════════════════ -->
+<div class="cta-banner" onclick="window.location.href='submit.html'">
+  <div class="cta-icon-box">
+    <div class="cta-icon-inner"></div>
+  </div>
+  <div class="cta-text">
+    <h4>Aapke paas unused coupons hain?</h4>
+    <p>Share karein — 10 points milenge har coupon ke liye ↗</p>
+  </div>
+</div>
+
+<!-- ═══════════════════ CLAIM MODAL ═════════════════ -->
+<div class="overlay" id="claimOverlay" onclick="overlayClick(event,'claimOverlay')">
+  <div class="modal">
+    <div class="modal-emoji">🎉</div>
+    <div class="modal-title">Coupon Claimed!</div>
+    <div class="modal-sub" id="claimModalSub">Platform — Discount</div>
+    <div class="modal-codebox">
+      <div class="modal-code" id="claimModalCode">CODE</div>
+      <div class="modal-meta" id="claimModalMeta"></div>
+    </div>
+    <button class="btn-copy" onclick="copyAndClose()">📋 Copy code & close</button>
+  </div>
+</div>
+
+<!-- LOGIN PROMPT MODAL -->
+<div class="overlay" id="loginOverlay" onclick="overlayClick(event,'loginOverlay')">
+  <div class="modal" style="max-width:360px;text-align:center;">
+    <div class="modal-emoji">🔐</div>
+    <div class="modal-title">Login karo pehle</div>
+    <div class="modal-sub">Coupon claim karne ke liye login zaroori hai</div>
+    <button class="btn-login" onclick="window.location.href='login.html'">Login</button>
+    <button class="btn-cancel" onclick="closeOverlay('loginOverlay')">Cancel</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ TOAST ════════════════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════ -->
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script>
+/* ── State ─────────────────────────────────── */
+let currentPage     = 1;
+let currentCat      = '';
+let searchTimer     = null;
+let currentClaimCode = '';
+let allPages        = 1;
+
+/* ══════════════════════════════════════════════
+   INIT
+══════════════════════════════════════════════ */
+function init() {
+  loadCoupons(true);
+}
+
+/* ══════════════════════════════════════════════
+   LOAD COUPONS
+══════════════════════════════════════════════ */
+async function loadCoupons(reset = false) {
+  if (reset) {
+    currentPage = 1;
+    document.getElementById('couponGrid').innerHTML =
+      '<div class="loader"><div class="spinner"></div> Loading coupons...</div>';
+    document.getElementById('loadMoreWrap').style.display = 'none';
+  }
+
+  const params = new URLSearchParams({ page: currentPage, sort: 'newest' });
+  if (currentCat) params.set('category', currentCat);
+  const search = document.getElementById('searchInput').value.trim();
+  if (search)   params.set('search', search);
+
+  try {
+    const data = await apiFetch('/api/coupons?' + params);
+
+    /* update stats */
+    if (currentPage === 1) {
+      document.getElementById('statTotal').textContent  = (data.total_active || data.total || 0).toLocaleString('en-IN');
+      document.getElementById('statClaims').textContent = (data.claims_today || 0).toLocaleString('en-IN');
+      document.getElementById('statSavings').textContent = '₹' + (data.total_savings || '89K');
+    }
+
+    const grid = document.getElementById('couponGrid');
+    if (currentPage === 1) grid.innerHTML = '';
+
+    const coupons = data.coupons || [];
+    if (coupons.length === 0 && currentPage === 1) {
+      grid.innerHTML = `
+        <div class="empty-state">
+          <div class="big">🎫</div>
+          <h3>Koi coupon nahi mila</h3>
+          <p>Is category mein abhi koi active coupon nahi hai</p>
+        </div>`;
+      return;
+    }
+
+    (data.coupons || []).forEach(c => grid.insertAdjacentHTML('beforeend', buildCard(c)));
+
+    allPages = data.pages || 1;
+    document.getElementById('loadMoreWrap').style.display =
+      currentPage < allPages ? 'block' : 'none';
+
+  } catch (err) {
+    document.getElementById('couponGrid').innerHTML = `
+      <div class="empty-state">
+        <div class="big">⚠️</div>
+        <h3>Server se connect nahi ho paya</h3>
+        <p>Backend chal raha hai? http://127.0.0.1:8000</p>
+      </div>`;
+
+    /* ── DEMO DATA when backend offline ── */
+    loadDemoData();
+  }
+}
+
+/* ── Demo data (when backend offline) ─────── */
+function loadDemoData() {
+  const demo = [
+    {id:1,platform:'Paytm',  code:'PAY50NOW', discount:'₹50 off',  description:'On recharge of ₹199+',      expiry_date:'2025-03-31',is_multi_use:false,is_claimed_by_me:false,code_hidden:'PA****',claim_count:3},
+    {id:2,platform:'Swiggy', code:'SWIG40',   discount:'40% off',  description:'Min order ₹299',             expiry_date:'2025-02-28',is_multi_use:true, is_claimed_by_me:false,code_hidden:'SW****',claim_count:7},
+    {id:3,platform:'Amazon', code:'AMZ100',   discount:'₹100 off', description:'Electronics ₹999+',         expiry_date:'2025-04-15',is_multi_use:false,is_claimed_by_me:true, code_hidden:'AM****',claim_count:12},
+    {id:4,platform:'Uber',   code:'UBER75',   discount:'₹75 off',  description:'First 3 rides',              expiry_date:'2025-05-01',is_multi_use:true, is_claimed_by_me:false,code_hidden:'UB****',claim_count:5},
+    {id:5,platform:'Zomato', code:'ZOM30',    discount:'30% off',  description:'Orders above ₹399',         expiry_date:'2025-03-10',is_multi_use:true, is_claimed_by_me:false,code_hidden:'ZO****',claim_count:9},
+    {id:6,platform:'Flipkart',code:'FLIP200', discount:'₹200 off', description:'Fashion ₹999+',              expiry_date:'2025-04-20',is_multi_use:false,is_claimed_by_me:false,code_hidden:'FL****',claim_count:4},
+  ];
+
+  document.getElementById('statTotal').textContent  = '1,248';
+  document.getElementById('statClaims').textContent = '342';
+  document.getElementById('statSavings').textContent = '₹89K';
+
+  const grid = document.getElementById('couponGrid');
+  grid.innerHTML = '';
+  demo.forEach(c => grid.insertAdjacentHTML('beforeend', buildCard(c)));
+}
+
+/* ── Build one coupon card HTML ────────────── */
+function buildCard(c) {
+  const days   = daysLeft(c.expiry_date);
+  const expCls = days <= 3 ? 'cc-expiry soon' : 'cc-expiry';
+  const expTxt = days <= 0
+    ? 'Expired'
+    : days <= 3
+      ? `⚠️ ${days} days left`
+      : `${days} days left`;
+
+  const platform = c.store || 'General';
+  const discount = c.discount_type === 'percent' && c.discount_value
+    ? `${c.discount_value}% OFF`
+    : c.discount_type === 'flat' && c.discount_value
+      ? `₹${c.discount_value} OFF`
+      : (c.discount_type || 'Deal');
+  const desc = c.description || 'No description available';
+  const code = c.code || 'N/A';
+
+  return `
+    <div class="coupon-card" id="cc-${c.id}">
+      <div class="cc-top">
+        <span class="plat-badge ${platformClass(platform)}">${platform}</span>
+        <div class="cc-discount">${discount}</div>
+        <div class="cc-desc">${desc}</div>
+        <div class="cc-codebox">
+          <span class="cc-code">${code}</span>
+          <div class="cc-copy-icon" onclick="copyCode('${code}')" title="Copy code"></div>
+        </div>
+      </div>
+      <div class="cc-bottom">
+        <span class="${expCls}">
+          <span class="exp-icon"></span> ${expTxt}
+        </span>
+        <button class="claim-btn" onclick="claimCoupon(${c.id},'${platform}','${discount}','${code}')">Claim</button>
+      </div>
+    </div>`;
+}
+
+/* ── Load more ─────────────────────────────── */
+function loadMore() {
+  currentPage++;
+  loadCoupons(false);
+}
+
+/* ══════════════════════════════════════════════
+   CLAIM
+══════════════════════════════════════════════ */
+async function claimCoupon(id, platform, discount, code) {
+  if (!isLoggedIn()) {
+    document.getElementById('loginOverlay').classList.add('open');
+    return;
+  }
+  try {
+    const data = await apiFetch(`/api/coupons/${id}/claim`, { method: 'POST' });
+    currentClaimCode = data.code;
+    document.getElementById('claimModalSub').textContent  = `${platform} — ${discount}`;
+    document.getElementById('claimModalCode').textContent = data.code;
+    document.getElementById('claimModalMeta').textContent = 'Tap to copy';
+    document.getElementById('claimOverlay').classList.add('open');
+
+    /* update card UI */
+    const card = document.getElementById('cc-'+id);
+    if (card) {
+      card.querySelector('.cc-code').textContent = data.code;
+      const btn = card.querySelector('.claim-btn');
+      if (btn) { btn.textContent='Claimed'; btn.classList.add('claimed'); btn.disabled=true; }
+    }
+  } catch (err) {
+    /* demo mode */
+    currentClaimCode = code;
+    document.getElementById('claimModalSub').textContent  = `${platform} — ${discount}`;
+    document.getElementById('claimModalCode').textContent = code;
+    document.getElementById('claimModalMeta').textContent = 'Code copied to clipboard!';
+    document.getElementById('claimOverlay').classList.add('open');
+    const card = document.getElementById('cc-'+id);
+    if (card) {
+      card.querySelector('.cc-code').textContent = code;
+      const btn = card.querySelector('.claim-btn');
+      if (btn) { btn.textContent='Claimed'; btn.classList.add('claimed'); btn.disabled=true; }
+    }
+  }
+}
+
+function copyAndClose() {
+  copyCode(currentClaimCode);
+  closeOverlay('claimOverlay');
+}
+
+/* ══════════════════════════════════════════════
+   SEARCH & FILTER
+══════════════════════════════════════════════ */
+function selCat(el, cat) {
+  document.querySelectorAll('.cat').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentCat = cat;
+  loadCoupons(true);
+}
+
+function onSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadCoupons(true), 380);
+}
+
+function toggleFilterPanel() {
+  showToast('Filter panel — coming soon!', 'info');
+}
+
+/* ══════════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════════ */
+function platformClass(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('paytm'))    return 'pb-paytm';
+  if (n.includes('swiggy'))   return 'pb-swiggy';
+  if (n.includes('amazon'))   return 'pb-amazon';
+  if (n.includes('uber'))     return 'pb-uber';
+  if (n.includes('zomato'))   return 'pb-zomato';
+  if (n.includes('flipkart')) return 'pb-flipkart';
+  return 'pb-default';
+}
+
+function daysLeft(dateStr) {
+  return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
+}
+
+function copyCode(code) {
+  if (!code) { showToast('Pehle coupon claim karo!', 'info'); return; }
+  navigator.clipboard.writeText(code)
+    .then(() => showToast('Code copied: ' + code, 'success'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = code; document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Code copied: ' + code, 'success');
+    });
+}
+
+
+/* ── Modals ────────────────────────────────── */
+function closeOverlay(id) {
+  document.getElementById(id).classList.remove('open');
+}
+function overlayClick(e, id) {
+  if (e.target.id === id) closeOverlay(id);
+}
+
+/* ── Toast ─────────────────────────────────── */
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  container.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(),400); }, 3000);
+}
+
+/* ── Start ─────────────────────────────────── */
+init();
+</script>
+</body>
+</html>

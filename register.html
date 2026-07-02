@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Register — CouponShare</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-box">
+    <a href="index.html" class="nav-brand" style="display:block;margin-bottom:1.5rem">Coupon<span>Share</span></a>
+    <h2>Create account</h2>
+    <p class="subtitle">Join thousands of savvy shoppers sharing deals</p>
+
+    <div id="form-alert" class="alert alert-error"></div>
+
+    <form id="reg-form">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="name" placeholder="Your name" required minlength="2">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="email" placeholder="you@example.com" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" placeholder="Min 6 characters" required minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+    </form>
+
+    <div class="auth-footer">
+      Already have an account? <a href="login.html">Login</a>
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (isLoggedIn()) { window.location.href = 'browse.html'; return; }
+
+  document.getElementById('reg-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideAlert('form-alert');
+    const btn = e.target.querySelector('button');
+    btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Creating...';
+
+    try {
+      await Auth.register({
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value,
+        password: document.getElementById('password').value
+      });
+      showAlert('form-alert', '✓ Account created! Redirecting to login...', 'success');
+      setTimeout(() => window.location.href = 'login.html', 1500);
+    } catch (err) {
+      showAlert('form-alert', err.message);
+      btn.disabled = false; btn.textContent = 'Create Account';
+    }
+  });
+});
+</script>
+</body>
+</html>

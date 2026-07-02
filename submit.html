@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Share a Coupon — CouponShare</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">Coupon<span>Share</span></a>
+  <div class="nav-right">
+    <div class="pts-badge" id="ptsDisplay" style="display:none;">
+      <span class="pts-icon"></span>
+      <span id="ptsNum">0</span> pts
+    </div>
+    <div style="display:none;" id="authBtns">
+      <a href="login.html" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--text);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-right:8px;">Login</a>
+      <a href="register.html" style="background:var(--purple);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">Register</a>
+    </div>
+    <div id="userArea" style="display:none;position:relative;">
+      <div class="avatar" id="avatarBtn" onclick="toggleDD()">
+        <span id="avatarInitials">?</span>
+      </div>
+      <div class="avatar-dd" id="avatarDD">
+        <a href="browse.html">Home Page</a>
+        <a href="submit.html">Share a Coupon</a>
+        <a href="dashboard.html">Dashboard</a>
+        <hr>
+        <a href="#" class="dd-logout" onclick="logout()">Logout</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header" style="max-width: 740px; margin: 0 auto 32px;">
+    <h1 style="font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,42px);font-weight:800;color:var(--text);line-height:1.1">Share a Coupon</h1>
+    <p style="margin-top:8px;color:var(--muted);font-size:15px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+      <span>Aapka coupon submit hoga</span> <span style="color:var(--purple);font-weight:600">→</span>
+      <span>Admin review karega</span> <span style="color:var(--purple);font-weight:600">→</span>
+      <span>Approve hone par live hoga</span>
+    </p>
+  </div>
+
+  <div class="stepper-wrap">
+    <button class="step-btn active" id="step-btn-1">1. Platform</button>
+    <button class="step-btn" id="step-btn-2">2. Coupon details</button>
+    <button class="step-btn" id="step-btn-3">3. Preview &amp; submit</button>
+  </div>
+
+  <!-- STEP 1 -->
+  <div class="form-card active" id="section-1">
+    <div class="card-title">Kaunsa platform ka coupon hai?</div>
+    <div class="card-subtitle">Platform select karein ya khud add karein</div>
+    <div class="platform-grid" id="platform-grid">
+      <div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:20px">Loading platforms...</div>
+    </div>
+    <div class="field-group" id="fg-platform-select">
+      <label>Select Platform <span class="req">*</span></label>
+      <select id="platform-select">
+        <option value="">-- Select Platform --</option>
+      </select>
+      <div class="error-msg">Platform select karo</div>
+    </div>
+    <div class="field-group" id="fg-platform-name">
+      <label>Platform Name <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <input type="text" id="platform-name" placeholder="e.g. Myntra, Flipkart, Other store" />
+      <div class="error-msg">Platform name daalo agar select nahi kiya</div>
+    </div>
+    <div class="field-group" id="fg-platform-url">
+      <label>Platform URL <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <input type="url" id="platform-url" placeholder="https://example.com/deal/..." />
+    </div>
+    <div class="btn-row">
+      <div></div>
+      <button class="btn btn-primary" onclick="goToStep(2)">Next: Coupon Details →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="form-card" id="section-2">
+    <div class="card-title">Coupon ki details bharo</div>
+    <div class="card-subtitle">Sahi information se zyada users ko faayda hoga</div>
+
+    <div class="field-group" id="fg-code">
+      <label>Coupon Code <span class="req">*</span></label>
+      <div class="code-wrap">
+        <input type="text" id="coupon-code" placeholder="e.g. SAVE20" maxlength="30" oninput="this.value=this.value.toUpperCase()" />
+        <button class="code-copy-btn" title="Preview" onclick="updatePreview()">👁</button>
+      </div>
+      <div class="error-msg">Coupon code required hai</div>
+    </div>
+
+    <div class="field-group" id="fg-title">
+      <label>Coupon Title <span class="req">*</span></label>
+      <input type="text" id="coupon-title" placeholder="e.g. 20% off on first order" maxlength="80" />
+      <div class="error-msg">Title required hai</div>
+    </div>
+
+    <div class="field-group">
+      <label>Discount Type <span class="req">*</span></label>
+      <div class="discount-pills" id="discount-pills">
+        <div class="disc-pill selected" data-val="percent" onclick="selectDiscount(this)">% Percent off</div>
+        <div class="disc-pill" data-val="flat" onclick="selectDiscount(this)">₹ Flat off</div>
+        <div class="disc-pill" data-val="bogo" onclick="selectDiscount(this)">🛍 BOGO</div>
+        <div class="disc-pill" data-val="free_shipping" onclick="selectDiscount(this)">🚚 Free Shipping</div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group" id="fg-discount-value">
+        <label>Discount Value</label>
+        <input type="text" id="discount-value" placeholder="e.g. 20 or 200" />
+      </div>
+      <div class="field-group" id="fg-category">
+        <label>Category <span class="req">*</span></label>
+        <select id="coupon-category">
+          <option value="">-- Select --</option>
+        </select>
+        <div class="error-msg">Category select karo</div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <label>Expiry Date</label>
+        <input type="date" id="expiry-date" />
+      </div>
+      <div class="field-group">
+        <label>Minimum Order (₹)</label>
+        <input type="text" id="min-order" placeholder="e.g. 499" />
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label>Description <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+      <textarea id="coupon-desc" placeholder="Koi aur details? Jaise: sirf new users ke liye, specific products pe..."></textarea>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+      <button class="btn btn-primary" onclick="goToStep(3)">Next: Preview →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="form-card" id="section-3">
+    <div class="card-title">Preview & Submit</div>
+    <div class="card-subtitle">Ek baar check karo, phir submit karo!</div>
+
+    <div class="preview-card" id="preview-card">
+      <div class="preview-platform-tag" id="preview-platform-tag">📦 Amazon</div>
+      <div class="preview-title" id="preview-title">Coupon Title</div>
+      <div class="preview-desc" id="preview-desc">Description yahan dikhegi...</div>
+      <div class="preview-code-box">
+        <span id="preview-code">CODE</span>
+      </div>
+      <div class="preview-meta" id="preview-meta"></div>
+    </div>
+
+    <table id="summary-table" style="width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:8px;">
+    </table>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" onclick="goToStep(2)">← Edit</button>
+      <button class="btn btn-primary" id="submit-btn" onclick="submitCoupon()">🚀 Submit for Review</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="form-card" id="section-success">
+    <div class="success-screen">
+      <div class="success-icon">🎉</div>
+      <h2>Coupon Submit Ho Gaya!</h2>
+      <p>Admin review karega aur approve hone ke baad<br/>yeh coupon live ho jaayega.</p>
+      <div class="coupon-id-chip" id="success-id">ID: #XXXXXXXX</div>
+      <div class="btn-row" style="justify-content:center;margin-top:24px;">
+        <button class="btn btn-primary" onclick="location.reload()">+ Ek Aur Submit Karo</button>
+        <button class="btn btn-secondary" onclick="window.location.href='browse.html'">Browse Coupons</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script>
+  if (!requireAuth()) { }
+
+  const state = { platform: null, platformEmoji: '', platformName: '', platforms: [], categories: [] };
+  let currentStep = 1;
+  let discountType = 'percent';
+
+  async function init() {
+    try {
+      const data = await apiFetch('/api/platforms');
+      state.platforms = data.platforms;
+    } catch(e) {
+      state.platforms = [];
+    }
+
+    if (!state.platforms.length) {
+      state.platforms = [
+        { id: 'amazon', name: 'Amazon', emoji: '📦' },
+        { id: 'flipkart', name: 'Flipkart', emoji: '🛒' },
+        { id: 'zomato', name: 'Zomato', emoji: '🍔' },
+        { id: 'swiggy', name: 'Swiggy', emoji: '🛵' },
+        { id: 'myntra', name: 'Myntra', emoji: '👗' },
+        { id: 'nykaa', name: 'Nykaa', emoji: '💄' },
+        { id: 'ajio', name: 'Ajio', emoji: '🧥' },
+        { id: 'other', name: 'Other', emoji: '🌐' },
+      ];
+    }
+
+    renderPlatforms();
+    document.getElementById('platform-select')?.addEventListener('change', (e) => {
+      selectPlatformById(e.target.value);
+    });
+
+    try {
+      const data = await apiFetch('/api/categories');
+      state.categories = data.categories;
+    } catch(e) {
+      state.categories = [];
+    }
+    if (!state.categories.length) {
+      state.categories = [
+        'Fashion & Apparel', 'Electronics', 'Groceries & Food',
+        'Travel & Hotels', 'Beauty & Health', 'Home & Furniture',
+        'Books & Education', 'Gaming', 'Sports & Fitness', 'Other',
+      ];
+    }
+    const sel = document.getElementById('coupon-category');
+    state.categories.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat; opt.textContent = cat;
+      sel.appendChild(opt);
+    });
+  }
+
+  function renderPlatforms() {
+    const grid = document.getElementById('platform-grid');
+    grid.innerHTML = state.platforms.map(p => `
+      <div class="platform-tile" data-id="${p.id}" data-name="${p.name}" data-emoji="${p.emoji}"
+           onclick="selectPlatform(this)">
+        <span class="emoji">${p.emoji}</span>
+        <span class="label">${p.name}</span>
+      </div>
+    `).join('');
+
+    const select = document.getElementById('platform-select');
+    if (select) {
+      select.innerHTML = `<option value="">-- Select Platform --</option>` +
+        state.platforms.map(p => `<option value="${p.id}" data-emoji="${p.emoji}" data-name="${p.name}">${p.emoji} ${p.name}</option>`).join('');
+      select.value = state.platform || '';
+    }
+    updatePlatformSelection();
+  }
+
+  function goToStep(step) {
+    if (step === 2 && !validateStep1()) return;
+    if (step === 3 && !validateStep2()) return;
+    currentStep = step;
+    document.querySelectorAll('.form-card').forEach(c => c.classList.remove('active'));
+    document.getElementById('section-' + step).classList.add('active');
+    document.querySelectorAll('.step-btn').forEach((btn, i) => {
+      btn.classList.remove('active', 'done');
+      if (i + 1 === step) btn.classList.add('active');
+      if (i + 1 < step) btn.classList.add('done');
+    });
+    if (step === 3) updatePreview();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function validateStep1() {
+    const fg = document.getElementById('fg-platform-select');
+    const nameEl = document.getElementById('platform-name');
+    const platformName = nameEl.value.trim();
+
+    if (!state.platform && !platformName) {
+      fg.classList.add('has-error');
+      showToast('Platform select karo ya platform name daalo!', 'error');
+      return false;
+    }
+
+    if (!state.platform && platformName) {
+      state.platformName = platformName;
+      state.platformEmoji = '🌐';
+    }
+
+    fg.classList.remove('has-error');
+    return true;
+  }
+
+  function validateStep2() {
+    let valid = true;
+    const codeEl = document.getElementById('coupon-code');
+    const codeFg = document.getElementById('fg-code');
+    if (!codeEl.value.trim()) { codeFg.classList.add('has-error'); valid = false; } else { codeFg.classList.remove('has-error'); }
+
+    const titleEl = document.getElementById('coupon-title');
+    const titleFg = document.getElementById('fg-title');
+    if (!titleEl.value.trim()) { titleFg.classList.add('has-error'); valid = false; } else { titleFg.classList.remove('has-error'); }
+
+    const catEl = document.getElementById('coupon-category');
+    const catFg = document.getElementById('fg-category');
+    if (!catEl.value) { catFg.classList.add('has-error'); valid = false; } else { catFg.classList.remove('has-error'); }
+    return valid;
+  }
+
+  function selectPlatform(tile) {
+    state.platform = tile.dataset.id;
+    state.platformName = tile.dataset.name;
+    state.platformEmoji = tile.dataset.emoji;
+    updatePlatformSelection();
+  }
+
+  function selectPlatformById(platformId) {
+    if (!platformId) {
+      state.platform = null;
+      state.platformName = '';
+      state.platformEmoji = '';
+      updatePlatformSelection();
+      return;
+    }
+    const platform = state.platforms.find(p => p.id === platformId);
+    if (platform) {
+      state.platform = platform.id;
+      state.platformName = platform.name;
+      state.platformEmoji = platform.emoji;
+      updatePlatformSelection();
+    }
+  }
+
+  function updatePlatformSelection() {
+    document.querySelectorAll('.platform-tile').forEach(t => {
+      t.classList.toggle('selected', t.dataset.id === state.platform);
+    });
+    const select = document.getElementById('platform-select');
+    if (select) select.value = state.platform || '';
+  }
+
+  function selectDiscount(pill) {
+    document.querySelectorAll('.disc-pill').forEach(p => p.classList.remove('selected'));
+    pill.classList.add('selected');
+    discountType = pill.dataset.val;
+    const dvLabel = document.querySelector('#fg-discount-value label');
+    if (discountType === 'percent') dvLabel.textContent = 'Discount Value (%)';
+    else if (discountType === 'flat') dvLabel.textContent = 'Discount Value (₹)';
+    else { dvLabel.textContent = 'Discount Value'; }
+  }
+
+  function updatePreview() {
+    const code = document.getElementById('coupon-code').value || 'CODE';
+    const title = document.getElementById('coupon-title').value || 'Coupon Title';
+    const desc = document.getElementById('coupon-desc').value || '';
+    const expiry = document.getElementById('expiry-date').value;
+    const minOrder = document.getElementById('min-order').value;
+    const discVal = document.getElementById('discount-value').value;
+
+    document.getElementById('preview-platform-tag').textContent = `${state.platformEmoji || '🛒'} ${state.platformName || 'Platform'}`;
+    document.getElementById('preview-code').textContent = code.toUpperCase();
+    document.getElementById('preview-title').textContent = title;
+    document.getElementById('preview-desc').textContent = desc || 'Koi description nahi';
+
+    const meta = document.getElementById('preview-meta');
+    let badges = [];
+    if (discVal) {
+      const sym = discountType === 'percent' ? `${discVal}% OFF` : discountType === 'flat' ? `₹${discVal} OFF` : discountType === 'bogo' ? 'BOGO' : 'Free Shipping';
+      badges.push(`🏷 ${sym}`);
+    }
+    if (expiry) badges.push(`📅 Expires: ${expiry}`);
+    if (minOrder) badges.push(`💰 Min order: ₹${minOrder}`);
+    meta.innerHTML = badges.map(b => `<span class="meta-badge">${b}</span>`).join('');
+
+    const summary = [
+      ['Platform', `${state.platformEmoji} ${state.platformName}`],
+      ['Code', document.getElementById('coupon-code').value || '—'],
+      ['Title', title],
+      ['Discount', discountType + (discVal ? ` - ${discVal}` : '')],
+      ['Category', document.getElementById('coupon-category').value || '—'],
+      ['Expiry', expiry || 'Not set'],
+      ['Min Order', minOrder ? `₹${minOrder}` : 'No minimum'],
+    ];
+    const table = document.getElementById('summary-table');
+    table.innerHTML = summary.map(([k,v]) => `
+      <tr>
+        <td style="padding:8px 4px;color:var(--muted);width:38%;border-bottom:1px solid var(--border)">${k}</td>
+        <td style="padding:8px 4px;font-weight:500;border-bottom:1px solid var(--border)">${v}</td>
+      </tr>
+    `).join('');
+  }
+
+  async function submitCoupon() {
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Submitting...';
+
+    const platformNameInput = document.getElementById('platform-name').value.trim();
+    const payload = {
+      title: document.getElementById('coupon-title').value.trim(),
+      code: document.getElementById('coupon-code').value.trim().toUpperCase(),
+      description: document.getElementById('coupon-desc').value,
+      category: document.getElementById('coupon-category').value,
+      discount_type: discountType,
+      discount_value: document.getElementById('discount-value').value || null,
+      store: state.platformName || platformNameInput || 'Other',
+      expiry_date: document.getElementById('expiry-date').value || null,
+    };
+
+    try {
+      const res = await Coupons.submit(payload);
+      showToast(res.message, 'success');
+      document.querySelectorAll('.form-card').forEach(c => c.classList.remove('active'));
+      document.getElementById('section-success').classList.add('active');
+      
+      const user = getUser();
+      if(user) {
+        user.points += res.points_earned || 5;
+        localStorage.setItem('cs_user', JSON.stringify(user));
+        renderNavUser();
+      }
+    } catch (e) {
+      showToast(e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '🚀 Submit for Review';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard — CouponShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<nav class="navbar">
+  <a href="index.html" class="nav-logo">Coupon<span>Share</span></a>
+  <div class="nav-right">
+    <div class="pts-badge" id="ptsDisplay" style="display:none;">
+      <span class="pts-icon"></span>
+      <span id="ptsNum">0</span> pts
+    </div>
+    <div style="display:none;" id="authBtns">
+      <a href="login.html" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--text);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-right:8px;">Login</a>
+      <a href="register.html" style="background:var(--purple);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">Register</a>
+    </div>
+    <div id="userArea" style="display:none;position:relative;">
+      <div class="avatar" id="avatarBtn" onclick="toggleDD()">
+        <span id="avatarInitials">?</span>
+      </div>
+      <div class="avatar-dd" id="avatarDD">
+        <a href="browse.html">Home Page</a>
+        <a href="submit.html">Share a Coupon</a>
+        <a href="dashboard.html" class="active">Dashboard</a>
+        <hr>
+        <a href="#" class="dd-logout" onclick="logout()">Logout</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="page-header" style="margin-bottom: 32px;">
+    <h1 style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--text);line-height:1.1;margin-bottom:8px;">Dashboard</h1>
+    <p style="color:var(--muted);font-size:15px;">Manage all your submitted coupons and claimed deals in one place.</p>
+  </div>
+
+  <div style="margin-bottom:48px;">
+    <h2 class="section-title" style="margin-bottom: 16px; font-size: 24px;">My Submissions</h2>
+    <div id="submissions-content">
+      <div style="text-align:center;padding:3rem;color:var(--muted)"><div class="spinner"></div></div>
+    </div>
+  </div>
+
+  <div style="margin-bottom:48px;">
+    <h2 class="section-title" style="margin-bottom: 16px; font-size: 24px;">My Claims</h2>
+    <div id="claims-content">
+      <div style="text-align:center;padding:3rem;color:var(--muted)"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script>
+function copyCode(code) {
+  navigator.clipboard.writeText(code);
+  showToast('Code Copied!');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+  
+  // Load Submissions
+  try {
+    const submissions = await Auth.mySubmissions();
+    const content = document.getElementById('submissions-content');
+    if (!submissions.length) {
+      content.innerHTML = `<div class="empty-state" style="text-align:center;padding:60px 20px;background:var(--card);border:1px dashed var(--border);border-radius:12px;">
+        <div style="font-size:40px;margin-bottom:16px;">📭</div>
+        <h3 style="font-family:'Syne',sans-serif;font-size:24px;color:var(--text);margin-bottom:8px;">No submissions yet</h3>
+        <p style="color:var(--muted);margin-bottom:24px;">Share your first coupon and earn points!</p>
+        <a href="submit.html" class="btn btn-primary" style="display:inline-block;">Submit a Coupon</a>
+      </div>`;
+    } else {
+      const stats = { pending: 0, approved: 0, rejected: 0 };
+      submissions.forEach(c => stats[c.status]++);
+
+      content.innerHTML = `
+        <div class="stats-row" style="margin-bottom:24px;">
+          <div class="stat-card"><div class="stat-num purple">${submissions.length}</div><div class="stat-lbl">Total Submitted</div></div>
+          <div class="stat-card"><div class="stat-num teal">${stats.approved}</div><div class="stat-lbl">Approved</div></div>
+          <div class="stat-card"><div class="stat-num amber">${stats.pending}</div><div class="stat-lbl">Pending Review</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:var(--red)">${stats.rejected}</div><div class="stat-lbl">Rejected</div></div>
+        </div>
+        <div class="coupons-grid">
+          ${submissions.map(c => {
+            let badgeColor = c.status === 'approved' ? 'var(--green)' : c.status === 'rejected' ? 'var(--red)' : 'var(--amber)';
+            return `
+            <div class="coupon-card">
+              <div class="cc-top">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                  <span class="plat-badge ${platformClass(c.store)}">${c.store || 'General'}</span>
+                  <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid ${badgeColor};color:${badgeColor};text-transform:uppercase;letter-spacing:0.5px;">${c.status}</span>
+                </div>
+                <div class="cc-discount" style="font-size:22px;margin-bottom:6px;">${c.title}</div>
+                <div class="cc-desc">${c.discount_type === 'percent' ? c.discount_value+'% OFF' : c.discount_type === 'flat' ? '₹'+c.discount_value+' OFF' : c.discount_type} - ${c.description || 'No description'}</div>
+                <div class="cc-codebox" style="margin-top:16px;">
+                  <span class="cc-code">${c.code}</span>
+                  <div class="cc-copy-icon" onclick="copyCode('${c.code}')" title="Copy code">📋</div>
+                </div>
+                ${c.reject_reason ? `<div style="margin-top:16px;font-size:13px;color:var(--red);background:rgba(239,68,68,0.1);padding:10px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);"><strong>Reason:</strong> ${c.reject_reason}</div>` : ''}
+              </div>
+              <div class="cc-bottom">
+                <span class="cc-expiry">Submitted on ${formatDate(c.created_at)}</span>
+              </div>
+            </div>`
+          }).join('')}
+        </div>`;
+    }
+  } catch (e) {
+    document.getElementById('submissions-content').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${e.message}</p></div>`;
+  }
+
+  // Load Claims
+  try {
+    const claims = await Auth.myClaims();
+    const content = document.getElementById('claims-content');
+    if (!claims.length) {
+      content.innerHTML = `
+        <div class="empty-state" style="text-align:center;padding:60px 20px;background:var(--card);border:1px dashed var(--border);border-radius:12px;">
+          <div style="font-size:40px;margin-bottom:16px;">🎟️</div>
+          <h3 style="font-family:'Syne',sans-serif;font-size:24px;color:var(--text);margin-bottom:8px;">No claims yet</h3>
+          <p style="color:var(--muted);margin-bottom:24px;">Browse deals and claim your first coupon!</p>
+          <a href="browse.html" class="btn btn-primary" style="display:inline-block;">Browse Deals</a>
+        </div>`;
+    } else {
+      content.innerHTML = `
+        <div class="coupons-grid">
+          ${claims.map(c => {
+            const discount = c.discount_type === 'percent' ? c.discount_value+'% OFF' : c.discount_type === 'flat' ? '₹'+c.discount_value+' OFF' : c.discount_type;
+            return `
+            <div class="coupon-card">
+              <div class="cc-top">
+                <span class="plat-badge ${platformClass(c.store)}">${c.store || 'General'}</span>
+                <div class="cc-discount" style="font-size:22px;margin-bottom:6px;">${c.title}</div>
+                <div class="cc-desc">${discount} - ${c.description || 'Verified working deal!'}</div>
+                <div class="cc-codebox" style="margin-top:16px;">
+                  <span class="cc-code">${c.code}</span>
+                  <div class="cc-copy-icon" onclick="copyCode('${c.code}')" title="Copy code">📋</div>
+                </div>
+              </div>
+              <div class="cc-bottom">
+                <span class="cc-expiry">Claimed on ${formatDate(c.claimed_at)}</span>
+              </div>
+            </div>`
+          }).join('')}
+        </div>`;
+    }
+  } catch (e) {
+    document.getElementById('claims-content').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${e.message}</p></div>`;
+  }
+});
+</script>
+</body>
+</html>
