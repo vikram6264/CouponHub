@@ -15,11 +15,12 @@ db_config = {
 
 connection_pool = pooling.MySQLConnectionPool(
     pool_name="couponshare_pool",
-    pool_size=5,
+    pool_size=10,
     **db_config
 )
 
 def get_db():
+    """FastAPI dependency: yields a pooled connection, always closes it."""
     conn = connection_pool.get_connection()
     try:
         yield conn

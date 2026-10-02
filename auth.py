@@ -1,12 +1,11 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from jose import JWTError, jwt
+from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 import os
-import hashlib
-import secrets
 
 load_dotenv()
 
@@ -14,33 +13,18 @@ SECRET_KEY = os.getenv("SECRET_KEY", "changeme")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 10080))
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 bearer_scheme = HTTPBearer(auto_error=False)
 
 def hash_password(password: str) -> str:
-    """Hash password using SHA256 with salt"""
-    # Truncate to 72 bytes for compatibility
-    password = password[:72]
-    salt = secrets.token_hex(16)
-    hashed = hashlib.sha256((salt + password).encode()).hexdigest()
-    return f"{salt}${hashed}"
+    return pwd_context.hash(password)
 
 def verify_password(plain: str, hashed: str) -> bool:
-    """Verify password against hash"""
-    # Truncate to 72 bytes for compatibility
-    plain = plain[:72]
-    try:
-        if "$" not in hashed:
-            return False
-        salt, stored_hash = hashed.split("$", 1)
-        computed_hash = hashlib.sha256((salt + plain).encode()).hexdigest()
-        return computed_hash == stored_hash
-    except Exception as e:
-        print(f"Password verification error: {e}")
-        return False
+    return pwd_context.verify(plain, hashed)
 
 def create_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 

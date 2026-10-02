@@ -1,213 +1,174 @@
-/* ═══════════════════════════════════════════════════
-   api.js — CouponShare
-   Sab API calls yahan se hoti hain.
-   Har HTML page mein <script src="api.js"> include karo.
-═══════════════════════════════════════════════════ */
-
 // Use the page origin so API calls follow the host/port the site was loaded from.
-const API_BASE = (typeof window !== 'undefined' && window.location && window.location.origin) ? window.location.origin : 'http://127.0.0.1:8000';
-console.log('API_BASE =', API_BASE);
+const API = (typeof window !== 'undefined' && window.location && window.location.origin && window.location.origin !== 'null')
+  ? window.location.origin
+  : 'http://127.0.0.1:8000';
 
-/* ── Core fetch helper ─────────────────────────────
-   Token automatically lagata hai agar login hua ho.
-   4xx/5xx pe Error throw karta hai with server message.
-─────────────────────────────────────────────────── */
-async function apiFetch(path, options = {}) {
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  };
+function getToken() { return localStorage.getItem('cs_token'); }
 
-  const token = localStorage.getItem('cs_token');
+async function apiFetch(url, options = {}) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json', ...(options.headers || {}) };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-
-  const url = API_BASE + path;
-  console.debug('apiFetch ->', options.method || 'GET', url);
-  let res;
-  try {
-    res = await fetch(url, { ...options, headers });
-  } catch (netErr) {
-    console.error('apiFetch network error', netErr);
-    throw new Error('Network error: ' + (netErr && netErr.message));
-  }
-
-  // Try to parse JSON (even on error responses)
-  let data;
-  try { data = await res.json(); } catch (e) { data = null; }
-
-  if (!res.ok) {
-    // Include status and body in the thrown error for easier debugging
-    const bodyText = data ? JSON.stringify(data) : await res.text().catch(() => '');
-    const msg = (data && (data.detail || data.message)) || `Error ${res.status}`;
-    const err = new Error(msg + ' (status=' + res.status + ')');
-    err.status = res.status;
-    err.body = data || bodyText;
-    console.error('apiFetch response error', { url, method: options.method || 'GET', status: res.status, body: err.body });
-    throw err;
-  }
-  return data;
+  
+  const res = await fetch(API + url, { ...options, headers });
+  return res;
 }
 
-/* ═══════════════════════════════════════════════════
-   Auth API
-═══════════════════════════════════════════════════ */
+// Auth
 const Auth = {
-  register: (payload) =>
-    apiFetch('/api/users/register', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-
-  login: (payload) =>
-    apiFetch('/api/users/login', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-
-  profile: () => apiFetch('/api/users/profile'),
-
-  mySubmissions: () => apiFetch('/api/users/my-submissions'),
-
-  myClaims: () => apiFetch('/api/users/my-claims'),
+  register: async (body) => {
+    const res = await apiFetch('/api/users/register', { method: 'POST', body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Registration failed');
+    return data;
+  },
+  login: async (body) => {
+    const res = await apiFetch('/api/users/login', { method: 'POST', body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Login failed');
+    return data;
+  },
+  profile: async () => {
+    const res = await apiFetch('/api/users/profile');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed to get profile');
+    return data;
+  },
+  mySubmissions: async () => {
+    const res = await apiFetch('/api/users/my-submissions');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed to fetch');
+    return data;
+  },
+  myClaims: async () => {
+    const res = await apiFetch('/api/users/my-claims');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed to fetch');
+    return data;
+  },
 };
 
-/* ═══════════════════════════════════════════════════
-   Coupons API
-═══════════════════════════════════════════════════ */
+// Coupons
 const Coupons = {
-  /* Browse with optional filters */
-  browse: (params = {}) => {
-    const q = new URLSearchParams();
-    if (params.search)   q.set('search',   params.search);
-    if (params.category) q.set('category', params.category);
-    if (params.store)    q.set('store',    params.store);
-    if (params.page)     q.set('page',     params.page);
-    if (params.limit)    q.set('limit',    params.limit);
-    return apiFetch('/api/coupons?' + q.toString());
+  submit: async (body) => {
+    const res = await apiFetch('/api/coupons', { method: 'POST', body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed to submit coupon');
+    return data;
   },
-
-  /* Submit a new coupon (login required) */
-  submit: (payload) =>
-    apiFetch('/api/coupons', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-
-  /* Claim a coupon (login required) */
-  claim: (id) =>
-    apiFetch(`/api/coupons/${id}/claim`, { method: 'POST' }),
-
-  /* Get distinct categories */
-  categories: () => apiFetch('/api/coupons/categories'),
 };
 
-/* ═══════════════════════════════════════════════════
-   Admin API  (admin token required for all)
-═══════════════════════════════════════════════════ */
+// Admin
 const Admin = {
-  /* Dashboard stats */
-  stats: () => apiFetch('/api/admin/stats'),
-
-  /* All coupons with optional status filter */
-  coupons: (status = '') => {
-    const q = status ? `?status=${status}` : '';
-    return apiFetch('/api/admin/coupons' + q);
+  stats: async () => {
+    const res = await apiFetch('/api/admin/stats');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed');
+    return data;
   },
-
-  /* Approve or reject a coupon */
-  reviewCoupon: (id, status, reject_reason = '') =>
-    apiFetch(`/api/admin/coupons/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify({ status, reject_reason }),
-    }),
-
-  /* Delete a coupon */
-  deleteCoupon: (id) =>
-    apiFetch(`/api/admin/coupons/${id}`, { method: 'DELETE' }),
-
-  /* All users */
-  users: (search = '') => {
-    const q = search ? `?search=${encodeURIComponent(search)}` : '';
-    return apiFetch('/api/admin/users' + q);
+  allCoupons: async (status) => {
+    const res = await apiFetch('/api/admin/coupons' + (status ? `?status=${status}` : ''));
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed');
+    return data;
   },
-
-  /* Ban or unban */
-  banUser: (id, is_banned) =>
-    apiFetch(`/api/admin/users/${id}/ban`, {
-      method: 'PUT',
-      body: JSON.stringify({ is_banned }),
-    }),
+  updateCoupon: async (id, body) => {
+    const res = await apiFetch(`/api/admin/coupons/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed');
+    return data;
+  },
+  bulkAction: async (body) => {
+    const res = await apiFetch('/api/admin/coupons/bulk', { method: 'POST', body: JSON.stringify(body) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed');
+    return data;
+  },
+  allUsers: async () => {
+    const res = await apiFetch('/api/admin/users');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed');
+    return data;
+  },
+  banUser: async (id, is_banned) => {
+    const res = await apiFetch(`/api/admin/users/${id}/ban`, { method: 'PUT', body: JSON.stringify({ is_banned }) });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed');
+    return data;
+  },
+  analytics: async () => {
+    const res = await apiFetch('/api/admin/analytics');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Failed');
+    return data;
+  },
 };
 
-/* ═══════════════════════════════════════════════════
-   Toast  (shared UI helper used everywhere)
-═══════════════════════════════════════════════════ */
+// Toast utility
 function showToast(msg, type = 'success') {
-  let container = document.querySelector('.toast-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.className = 'toast-container';
-    document.body.appendChild(container);
+  let t = document.getElementById('toastContainer');
+  if (!t) { 
+    t = document.createElement('div'); 
+    t.id = 'toastContainer'; 
+    t.className = 'toast-container'; 
+    document.body.appendChild(t); 
   }
-
-  const t = document.createElement('div');
-  t.className = `toast ${type}`;
-
-  const icons = { success: '✓', error: '✕', info: 'ℹ' };
-  t.innerHTML = `<span style="font-size:16px">${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
-  container.appendChild(t);
-
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${type === 'success' ? '✓' : type === 'error' ? '✕' : 'ℹ'}</span> ${msg}`;
+  t.appendChild(toast);
+  
   // Trigger animation
-  requestAnimationFrame(() => t.classList.add('show'));
-
+  setTimeout(() => toast.classList.add('show'), 10);
+  
   setTimeout(() => {
-    t.classList.remove('show');
-    setTimeout(() => t.remove(), 400);
-  }, 3200);
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
 }
 
-/* ═══════════════════════════════════════════════════
-   Alert helpers  (used in auth forms)
-═══════════════════════════════════════════════════ */
+// Alert utility
 function showAlert(id, msg, type = 'error') {
   const el = document.getElementById(id);
   if (!el) return;
-  el.textContent = msg;
   el.className = `alert alert-${type} show`;
+  el.textContent = msg;
 }
+
 function hideAlert(id) {
   const el = document.getElementById(id);
-  if (el) el.classList.remove('show');
+  if (el) el.className = 'alert';
 }
 
-/* ═══════════════════════════════════════════════════
-   Date / format helpers
-═══════════════════════════════════════════════════ */
-function formatDate(str) {
-  if (!str) return '—';
-  try {
-    return new Date(str).toLocaleDateString('en-IN', {
-      day: '2-digit', month: 'short', year: 'numeric',
-    });
-  } catch { return str; }
+// Format date
+function formatDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function daysLeft(dateStr) {
-  if (!dateStr) return null;
-  const diff = Math.ceil((new Date(dateStr) - new Date()) / 86400000);
+// Days until expiry
+function daysLeft(d) {
+  if (!d) return null;
+  const diff = Math.ceil((new Date(d) - new Date()) / 86400000);
   return diff;
 }
 
-/* ═══════════════════════════════════════════════════
-   Platform CSS class helper
-═══════════════════════════════════════════════════ */
-function platformClass(store) {
-  const s = (store || '').toLowerCase();
-  if (s.includes('paytm'))    return 'pb-paytm';
-  if (s.includes('swiggy'))   return 'pb-swiggy';
-  if (s.includes('amazon'))   return 'pb-amazon';
-  if (s.includes('uber'))     return 'pb-uber';
-  if (s.includes('zomato'))   return 'pb-zomato';
-  if (s.includes('flipkart')) return 'pb-flipkart';
+function platformClass(plat) {
+  if (!plat) return 'pb-default';
+  const p = plat.toLowerCase();
+  if (p.includes('paytm')) return 'pb-paytm';
+  if (p.includes('swiggy')) return 'pb-swiggy';
+  if (p.includes('amazon')) return 'pb-amazon';
+  if (p.includes('uber')) return 'pb-uber';
+  if (p.includes('zomato')) return 'pb-zomato';
+  if (p.includes('flipkart')) return 'pb-flipkart';
+  if (p.includes('myntra')) return 'pb-myntra';
+  if (p.includes('ajio')) return 'pb-ajio';
   return 'pb-default';
+}
+
+// Escape untrusted strings before inserting into HTML templates
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, ch =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }

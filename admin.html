@@ -1,1348 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Panel — CouponShare</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
-<style>
-/* ── Admin Layout ───────────────────────────── */
-body { overflow: hidden; height: 100vh; }
-
-.admin-shell {
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* ── Sidebar ────────────────────────────────── */
-.sidebar {
-  background: #111111;
-  border-right: 1px solid #2a2a2a;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow-y: auto;
-}
-.sb-brand {
-  padding: 20px 20px 16px;
-  border-bottom: 1px solid #2a2a2a;
-}
-.sb-brand-name {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--purple);
-  letter-spacing: -0.3px;
-}
-.sb-brand-name span { color: var(--green); }
-.sb-brand-sub {
-  font-size: 11px;
-  color: #555;
-  margin-top: 2px;
-}
-.sb-nav {
-  padding: 12px 10px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.sb-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: #888;
-  background: none;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  transition: all .15s;
-  position: relative;
-}
-.sb-link:hover { background: #1a1a1a; color: #ccc; }
-.sb-link.active {
-  background: #1e1e2e;
-  color: #fff;
-  border: 1px solid #333;
-}
-.sb-link .sb-icon {
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1.5px solid #444;
-  border-radius: 5px;
-  font-size: 12px;
-  flex-shrink: 0;
-}
-.sb-link.active .sb-icon { border-color: #666; }
-.sb-badge {
-  margin-left: auto;
-  background: #ef4444;
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 20px;
-  min-width: 20px;
-  text-align: center;
-}
-.sb-footer {
-  padding: 16px 20px;
-  border-top: 1px solid #2a2a2a;
-}
-.sb-footer-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #ddd;
-  margin-bottom: 2px;
-}
-.sb-footer-email { font-size: 11px; color: #555; }
-.sb-logout {
-  margin-top: 10px;
-  font-size: 12px;
-  color: #ef4444;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
-}
-
-/* ── Main area ──────────────────────────────── */
-.admin-main {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  overflow: hidden;
-  background: var(--bg);
-}
-.admin-topbar {
-  height: 52px;
-  padding: 0 24px;
-  border-bottom: 1px solid #2a2a2a;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  background: #111;
-}
-.admin-topbar-title {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-}
-.admin-topbar-right { display: flex; align-items: center; gap: 10px; }
-.notif-btn {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  border: 1px solid #333;
-  background: transparent;
-  color: #888;
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 15px;
-  position: relative;
-}
-.notif-dot {
-  position: absolute; top: 6px; right: 6px;
-  width: 7px; height: 7px;
-  background: #ef4444; border-radius: 50%;
-}
-.admin-avatar {
-  width: 30px; height: 30px; border-radius: 50%;
-  background: var(--teal2);
-  color: var(--teal);
-  font-size: 12px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center;
-}
-.admin-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-}
-
-/* ── Page sections ──────────────────────────── */
-.page-section { display: none; }
-.page-section.active { display: block; }
-
-/* ── Stats grid ─────────────────────────────── */
-.adm-stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 24px;
-}
-.adm-stat {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-  padding: 18px 20px;
-}
-.adm-stat-val {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 28px;
-  font-weight: 700;
-  margin-bottom: 4px;
-  line-height: 1;
-}
-.adm-stat-lbl { font-size: 12px; color: #666; }
-.adm-stat-trend { font-size: 11px; margin-top: 6px; }
-.adm-stat-trend.up { color: var(--green); }
-.adm-stat-trend.warn { color: var(--amber); }
-
-/* ── Section header ─────────────────────────── */
-.sec-hd {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.sec-hd-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #fff;
-}
-.sec-hd-action {
-  font-size: 12px;
-  color: #666;
-  cursor: pointer;
-  background: none;
-  border: none;
-  padding: 4px 10px;
-  border-radius: 6px;
-  border: 1px solid #333;
-}
-.sec-hd-action:hover { color: #fff; border-color: #555; }
-
-/* ── Filter bar ─────────────────────────────── */
-.filter-bar {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.filter-bar input,
-.filter-bar select {
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-family: 'DM Sans', sans-serif;
-  color: #fff;
-  outline: none;
-}
-.filter-bar input { flex: 1; min-width: 200px; }
-.filter-bar input::placeholder { color: #555; }
-.filter-bar select { cursor: pointer; }
-.filter-bar select option { background: #1e1e1e; }
-
-/* ── Request cards ──────────────────────────── */
-.req-card {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-  padding: 16px 18px;
-  margin-bottom: 10px;
-  transition: border-color .15s;
-}
-.req-card:hover { border-color: #3a3a3a; }
-.req-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-.req-info { flex: 1; }
-.req-plat-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.req-title-txt { font-size: 15px; font-weight: 600; color: #fff; }
-.req-meta {
-  font-size: 11px;
-  color: #555;
-  margin-top: 3px;
-  line-height: 1.6;
-}
-.req-meta strong { color: #888; font-family: monospace; letter-spacing: 1px; }
-.req-desc { font-size: 13px; color: #888; margin-bottom: 12px; line-height: 1.5; }
-.req-actions { display: flex; gap: 8px; flex-shrink: 0; }
-.req-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 12px;
-  border-top: 1px solid #2a2a2a;
-}
-.req-expiry { font-size: 11px; color: #555; }
-
-/* Approve / Reject buttons */
-.btn-approve {
-  padding: 7px 16px;
-  border-radius: 7px;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  border: 1px solid #10b981;
-  background: rgba(16,185,129,0.1);
-  color: #10b981;
-  transition: all .15s;
-  display: flex; align-items: center; gap: 5px;
-}
-.btn-approve:hover { background: rgba(16,185,129,0.2); }
-.btn-reject {
-  padding: 7px 16px;
-  border-radius: 7px;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-  cursor: pointer;
-  border: 1px solid #ef4444;
-  background: rgba(239,68,68,0.1);
-  color: #ef4444;
-  transition: all .15s;
-  display: flex; align-items: center; gap: 5px;
-}
-.btn-reject:hover { background: rgba(239,68,68,0.2); }
-.btn-delete {
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  cursor: pointer;
-  border: 1px solid #ef4444;
-  background: rgba(239,68,68,0.08);
-  color: #ef4444;
-}
-
-/* ── Status badge ───────────────────────────── */
-.status-badge {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 9px;
-  border-radius: 20px;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-.sb-pending  { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
-.sb-approved { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
-.sb-rejected { background: rgba(239,68,68,0.15);  color: #ef4444; border: 1px solid rgba(239,68,68,0.3);  }
-
-/* Platform badge (small white pill) */
-.plat-pill {
-  display: inline-block;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 20px;
-  background: #fff;
-}
-.pp-paytm   { color: #00baf2; }
-.pp-swiggy  { color: #fc5a09; }
-.pp-amazon  { color: #f59e0b; }
-.pp-uber    { color: #10b981; }
-.pp-zomato  { color: #ef4444; }
-.pp-flipkart{ color: #0078ff; }
-.pp-default { color: #333; }
-
-/* ── Table ──────────────────────────────────── */
-.tbl-wrap {
-  overflow-x: auto;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-}
-table { width: 100%; border-collapse: collapse; }
-thead { background: #161616; }
-th {
-  padding: 11px 14px;
-  text-align: left;
-  font-size: 11px;
-  font-weight: 600;
-  color: #555;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid #2a2a2a;
-  white-space: nowrap;
-}
-td {
-  padding: 11px 14px;
-  font-size: 13px;
-  color: #ccc;
-  border-bottom: 1px solid #1e1e1e;
-  vertical-align: middle;
-}
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: #1a1a1a; }
-.td-code {
-  font-family: monospace;
-  letter-spacing: 1px;
-  font-size: 12px;
-  color: #aaa;
-}
-.td-name { font-weight: 500; color: #fff; }
-.td-email { font-size: 11px; color: #555; }
-
-/* ── Bar chart ──────────────────────────────── */
-.bar-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.bar-name { font-size: 12px; color: #888; width: 80px; flex-shrink: 0; }
-.bar-bg {
-  flex: 1;
-  height: 8px;
-  background: #2a2a2a;
-  border-radius: 4px;
-  overflow: hidden;
-}
-.bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
-.bar-count { font-size: 11px; color: #555; width: 30px; text-align: right; flex-shrink: 0; }
-
-/* ── Reject modal ───────────────────────────── */
-.reject-panel {
-  display: none;
-  margin-top: 12px;
-  background: #161616;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 16px;
-}
-.reject-panel.open { display: block; }
-.reason-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-.r-chip {
-  padding: 5px 12px;
-  border-radius: 20px;
-  border: 1px solid #333;
-  font-size: 11px;
-  color: #888;
-  cursor: pointer;
-  background: #1e1e1e;
-}
-.r-chip:hover { border-color: #555; color: #fff; }
-.r-chip.on { background: rgba(239,68,68,0.15); color: #ef4444; border-color: #ef4444; }
-.reject-ta {
-  width: 100%;
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  color: #fff;
-  resize: none;
-  min-height: 60px;
-  margin-bottom: 10px;
-  outline: none;
-}
-.reject-btn-row { display: flex; gap: 8px; }
-
-/* ── Settings ───────────────────────────────── */
-.settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid #2a2a2a;
-}
-.settings-row:last-child { border: none; }
-.settings-row-label { font-size: 14px; font-weight: 500; color: #ddd; }
-.settings-row-sub { font-size: 12px; color: #555; margin-top: 2px; }
-.settings-input {
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 7px;
-  padding: 7px 12px;
-  font-size: 13px;
-  color: #fff;
-  width: 80px;
-  text-align: center;
-  outline: none;
-}
-.toggle-wrap { position: relative; width: 42px; height: 24px; }
-.toggle-wrap input { opacity: 0; width: 0; height: 0; }
-.toggle-slider {
-  position: absolute; inset: 0;
-  background: #333;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: .2s;
-}
-.toggle-slider::before {
-  content: '';
-  position: absolute;
-  width: 18px; height: 18px;
-  left: 3px; top: 3px;
-  background: #fff;
-  border-radius: 50%;
-  transition: .2s;
-}
-.toggle-wrap input:checked + .toggle-slider { background: var(--purple); }
-.toggle-wrap input:checked + .toggle-slider::before { transform: translateX(18px); }
-
-/* ── Activity log ───────────────────────────── */
-.act-item {
-  display: flex;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #1e1e1e;
-}
-.act-item:last-child { border: none; }
-.act-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  margin-top: 5px;
-}
-.act-txt { font-size: 13px; color: #aaa; line-height: 1.5; }
-.act-time { font-size: 11px; color: #444; margin-top: 2px; }
-
-/* ── Dashboard 2-col ────────────────────────── */
-.dash-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-.dash-card {
-  background: #1e1e1e;
-  border: 1px solid #2a2a2a;
-  border-radius: 10px;
-  padding: 18px;
-}
-
-/* ── Loader ─────────────────────────────────── */
-.page-loader {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  padding: 48px;
-  color: #555;
-  font-size: 14px;
-}
-
-/* ── Empty ──────────────────────────────────── */
-.adm-empty {
-  text-align: center;
-  padding: 48px 24px;
-  color: #444;
-}
-.adm-empty-icon { font-size: 40px; margin-bottom: 10px; }
-.adm-empty h3 { font-size: 15px; color: #666; }
-
-/* ── Reports warning ────────────────────────── */
-.report-warn {
-  background: rgba(245,158,11,0.08);
-  border: 1px solid rgba(245,158,11,0.25);
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: #f59e0b;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-@media (max-width: 768px) {
-  .adm-stats { grid-template-columns: repeat(2, 1fr); }
-  .dash-row  { grid-template-columns: 1fr; }
-  .sidebar   { display: none; }
-  .admin-shell { grid-template-columns: 1fr; }
-}
-</style>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Dashboard — CouponShare</title>
+<link rel="stylesheet" href="admin.css">
 </head>
 <body>
-
-<div class="admin-shell">
-
-<!-- ══════════════════ SIDEBAR ══════════════════ -->
-<aside class="sidebar">
-  <div class="sb-brand">
-    <div class="sb-brand-name">Coupon<span>Share</span></div>
-    <div class="sb-brand-sub">Admin panel</div>
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <h2>CouponShare</h2>
+    <p>Admin Panel</p>
   </div>
-
-  <nav class="sb-nav">
-    <button class="sb-link active" onclick="showPage('dashboard', this)">
-      <span class="sb-icon">📊</span> Dashboard
-    </button>
-    <button class="sb-link" onclick="showPage('requests', this)">
-      <span class="sb-icon">📥</span> Requests
-      <span class="sb-badge" id="pendingBadge" style="display:none;">0</span>
-    </button>
-    <button class="sb-link" onclick="showPage('coupons', this)">
-      <span class="sb-icon">🎟</span> All coupons
-    </button>
-    <button class="sb-link" onclick="showPage('users', this)">
-      <span class="sb-icon">👥</span> Users
-    </button>
-    <button class="sb-link" onclick="showPage('analytics', this)">
-      <span class="sb-icon">📈</span> Analytics
-    </button>
-    <button class="sb-link" onclick="showPage('settings', this)">
-      <span class="sb-icon">⚙️</span> Settings
-    </button>
+  <nav class="sidebar-nav">
+    <a href="#" class="active" data-tab="dashboard" onclick="showTab('dashboard');return false">
+      <span class="nav-icon">📊</span> Dashboard
+    </a>
+    <a href="#" data-tab="requests" onclick="showTab('requests');return false">
+      <span class="nav-icon">📥</span> Pending Requests
+      <span class="sidebar-badge" id="pending-badge">0</span>
+    </a>
+    <a href="#" data-tab="all" onclick="showTab('all');return false">
+      <span class="nav-icon">🎟️</span> All Coupons
+    </a>
+    <a href="#" data-tab="approved" onclick="showTab('approved');return false">
+      <span class="nav-icon">✅</span> Approved
+    </a>
+    <a href="#" data-tab="users" onclick="showTab('users');return false">
+      <span class="nav-icon">👥</span> Users
+    </a>
+    <a href="#" data-tab="analytics" onclick="showTab('analytics');return false">
+      <span class="nav-icon">📈</span> Analytics
+    </a>
   </nav>
-
-  <div class="sb-footer">
-    <div class="sb-footer-name" id="sbAdminName">Admin</div>
-    <div class="sb-footer-email" id="sbAdminEmail">admin@couponshare.com</div>
-    <button class="sb-logout" onclick="logoutAdmin()">→ Logout</button>
+  <div class="sidebar-footer">
+    <a href="browse.html">🏠 Back to Site</a>
+    <a href="#" onclick="logout();return false">🚪 Logout</a>
   </div>
 </aside>
 
-<!-- ══════════════════ MAIN ══════════════════ -->
-<main class="admin-main">
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div style="display:flex;align-items:center;gap:0.8rem">
+      <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">☰</button>
+      <span class="topbar-title" id="topbar-title">Dashboard</span>
+    </div>
+    <div class="topbar-right">
+      <span class="admin-badge">⚡ Admin</span>
+      <span id="admin-name" style="font-size:0.85rem;color:var(--muted)"></span>
+    </div>
+  </header>
 
-  <!-- Topbar -->
-  <div class="admin-topbar">
-    <span class="admin-topbar-title" id="topbarTitle">Dashboard</span>
-    <div class="admin-topbar-right">
-      <button class="notif-btn" id="notifBtn" onclick="showPage('requests', document.querySelectorAll('.sb-link')[1])">
-        🔔<span class="notif-dot" id="notifDot" style="display:none;"></span>
-      </button>
-      <div class="admin-avatar" id="adminAvatar">AD</div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="section-dashboard" class="admin-section">
+      <div class="metrics">
+        <div class="metric-card orange">
+          <div class="metric-icon">👥</div>
+          <div class="metric-num" id="stat-users">—</div>
+          <div class="metric-label">Total Users</div>
+        </div>
+        <div class="metric-card yellow">
+          <div class="metric-icon">⏳</div>
+          <div class="metric-num" id="stat-pending">—</div>
+          <div class="metric-label">Pending</div>
+        </div>
+        <div class="metric-card green">
+          <div class="metric-icon">✅</div>
+          <div class="metric-num" id="stat-approved">—</div>
+          <div class="metric-label">Approved</div>
+        </div>
+        <div class="metric-card red">
+          <div class="metric-icon">✕</div>
+          <div class="metric-num" id="stat-rejected">—</div>
+          <div class="metric-label">Rejected</div>
+        </div>
+        <div class="metric-card purple">
+          <div class="metric-icon">📋</div>
+          <div class="metric-num" id="stat-claims">—</div>
+          <div class="metric-label">Total Claims</div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="section-card">
+          <div class="section-header"><h3>Category Breakdown</h3></div>
+          <div class="section-body analytics-cats" style="max-height:260px;overflow-y:auto">
+            <div class="spinner-center"><div class="spinner"></div></div>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-header"><h3>Top Stores</h3></div>
+          <div class="section-body analytics-stores">
+            <div class="spinner-center"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PENDING REQUESTS -->
+    <div id="section-requests" class="admin-section" style="display:none">
+      <div class="bulk-bar" id="bulk-bar">
+        <span>0 selected</span>
+        <button class="btn btn-success btn-sm" onclick="bulkAction('approved')">✓ Approve</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkAction('rejected')">✕ Reject</button>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <h3>Pending Coupon Requests</h3>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-success btn-sm" onclick="bulkAction('approved')">✓ Approve Selected</button>
+            <button class="btn btn-danger btn-sm" onclick="bulkAction('rejected')">✕ Reject Selected</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleAllCheckboxes(this, 'requests')"></th>
+              <th>Coupon</th><th>Code</th><th>Submitted By</th><th>Status</th><th>Expiry</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="coupon-tbody-requests"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALL COUPONS -->
+    <div id="section-all" class="admin-section" style="display:none">
+      <div class="bulk-bar" id="bulk-bar-all">
+        <span>0 selected</span>
+        <button class="btn btn-success btn-sm" onclick="bulkAction('approved')">✓ Approve</button>
+        <button class="btn btn-danger btn-sm" onclick="bulkAction('rejected')">✕ Reject</button>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <h3>All Coupons</h3>
+          <div style="display:flex;gap:0.5rem">
+            <button class="btn btn-success btn-sm" onclick="bulkAction('approved')">✓ Bulk Approve</button>
+            <button class="btn btn-danger btn-sm" onclick="bulkAction('rejected')">✕ Bulk Reject</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleAllCheckboxes(this, 'all')"></th>
+              <th>Coupon</th><th>Code</th><th>Submitted By</th><th>Status</th><th>Expiry</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="coupon-tbody-all"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPROVED -->
+    <div id="section-approved" class="admin-section" style="display:none">
+      <div class="section-card">
+        <div class="section-header"><h3>Approved Coupons</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th><input type="checkbox" onchange="toggleAllCheckboxes(this, 'approved')"></th>
+              <th>Coupon</th><th>Code</th><th>Submitted By</th><th>Status</th><th>Expiry</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="coupon-tbody-approved"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div id="section-users" class="admin-section" style="display:none">
+      <div class="section-card">
+        <div class="section-header"><h3>All Users</h3></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Name</th><th>Email</th><th>Points</th><th>Coupons</th><th>Status</th><th>Action</th>
+            </tr></thead>
+            <tbody id="user-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS -->
+    <div id="section-analytics" class="admin-section" style="display:none">
+      <div class="dashboard-grid">
+        <div class="section-card">
+          <div class="section-header"><h3>By Category</h3></div>
+          <div class="section-body analytics-cats"><div class="spinner-center"><div class="spinner"></div></div></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header"><h3>Top Stores by Coupons</h3></div>
+          <div class="section-body analytics-stores"><div class="spinner-center"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header"><h3>Submissions — last 30 days</h3></div>
+        <div class="section-body analytics-days"><div class="spinner-center"><div class="spinner"></div></div></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- REJECT MODAL -->
+<div class="modal-overlay" id="reject-modal">
+  <div class="modal">
+    <h3>Reject Coupon</h3>
+    <div class="form-group">
+      <label>Rejection Reason (optional)</label>
+      <textarea id="reject-reason" placeholder="e.g. Expired code, duplicate, invalid..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeRejectModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmReject()">Confirm Reject</button>
     </div>
   </div>
+</div>
 
-  <div class="admin-content">
-
-    <!-- ══════ PAGE: DASHBOARD ══════ -->
-    <div class="page-section active" id="pg-dashboard">
-
-      <div class="adm-stats" id="statsGrid">
-        <div class="adm-stat"><div class="adm-stat-val" style="color:#6366f1" id="st-users">—</div><div class="adm-stat-lbl">Total users</div></div>
-        <div class="adm-stat"><div class="adm-stat-val" style="color:#f59e0b" id="st-pending">—</div><div class="adm-stat-lbl">Pending review</div><div class="adm-stat-trend warn" id="st-pending-hint"></div></div>
-        <div class="adm-stat"><div class="adm-stat-val" style="color:#10b981" id="st-approved">—</div><div class="adm-stat-lbl">Live coupons</div></div>
-        <div class="adm-stat"><div class="adm-stat-val" style="color:#a29bfe" id="st-claims">—</div><div class="adm-stat-lbl">Total claims</div></div>
-      </div>
-
-      <div class="dash-row">
-        <!-- Recent pending -->
-        <div class="dash-card">
-          <div class="sec-hd">
-            <span class="sec-hd-title">Pending requests</span>
-            <button class="sec-hd-action" onclick="showPage('requests',document.querySelectorAll('.sb-link')[1])">View all</button>
-          </div>
-          <div id="dashPending">
-            <div class="page-loader"><div class="spinner"></div></div>
-          </div>
-        </div>
-
-        <!-- Top platforms -->
-        <div class="dash-card">
-          <div class="sec-hd"><span class="sec-hd-title">Top platforms</span></div>
-          <div id="dashPlatforms">
-            <div class="page-loader"><div class="spinner"></div></div>
-          </div>
-
-          <!-- Activity log -->
-          <div style="margin-top:18px;">
-            <div class="sec-hd-title" style="font-size:13px;margin-bottom:10px;">Recent activity</div>
-            <div class="act-item"><div class="act-dot" style="background:#10b981"></div><div><div class="act-txt">AMZ100 approved — user ko +10 pts</div><div class="act-time">2 min ago</div></div></div>
-            <div class="act-item"><div class="act-dot" style="background:#ef4444"></div><div><div class="act-txt">FLIP200 rejected — code already exists</div><div class="act-time">18 min ago</div></div></div>
-            <div class="act-item"><div class="act-dot" style="background:#6366f1"></div><div><div class="act-txt">New user registered</div><div class="act-time">1 hr ago</div></div></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════ PAGE: REQUESTS ══════ -->
-    <div class="page-section" id="pg-requests">
-      <div class="filter-bar">
-        <input type="text" id="reqSearch" placeholder="Code ya store search karo..." oninput="filterRequests()">
-        <select id="reqStatus" onchange="loadRequests()">
-          <option value="pending">Pending</option>
-          <option value="approved">Approved</option>
-          <option value="rejected">Rejected</option>
-          <option value="">All status</option>
-        </select>
-      </div>
-      <div id="requestsList">
-        <div class="page-loader"><div class="spinner"></div></div>
-      </div>
-    </div>
-
-    <!-- ══════ PAGE: ALL COUPONS ══════ -->
-    <div class="page-section" id="pg-coupons">
-      <div class="filter-bar">
-        <input type="text" id="couponSearch" placeholder="Code ya store search..." oninput="filterCouponsTable()">
-        <select id="couponStatusFilter" onchange="loadAllCoupons()">
-          <option value="">All status</option>
-          <option value="approved">Approved</option>
-          <option value="pending">Pending</option>
-          <option value="rejected">Rejected</option>
-        </select>
-      </div>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Platform</th>
-              <th>Code</th>
-              <th>Title</th>
-              <th>Discount</th>
-              <th>Category</th>
-              <th>Claims</th>
-              <th>Expiry</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="couponsTable">
-            <tr><td colspan="9"><div class="page-loader"><div class="spinner"></div></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ══════ PAGE: USERS ══════ -->
-    <div class="page-section" id="pg-users">
-      <div class="filter-bar">
-        <input type="text" id="userSearch" placeholder="Naam ya email search karo..." oninput="loadUsers()">
-      </div>
-      <div class="tbl-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Joined</th>
-              <th>Submitted</th>
-              <th>Claimed</th>
-              <th>Points</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody id="usersTable">
-            <tr><td colspan="8"><div class="page-loader"><div class="spinner"></div></div></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ══════ PAGE: ANALYTICS ══════ -->
-    <div class="page-section" id="pg-analytics">
-      <div class="adm-stats" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;">
-        <div class="adm-stat"><div class="adm-stat-val" style="color:#6366f1" id="an-approval">—</div><div class="adm-stat-lbl">Approval rate</div></div>
-        <div class="adm-stat"><div class="adm-stat-val" style="color:#10b981" id="an-savings">₹89K</div><div class="adm-stat-lbl">Community savings</div></div>
-        <div class="adm-stat"><div class="adm-stat-val" style="color:#f59e0b" id="an-rejected">—</div><div class="adm-stat-lbl">Total rejected</div></div>
-      </div>
-      <div class="dash-row">
-        <div class="dash-card">
-          <div class="sec-hd-title" style="margin-bottom:14px;">Platforms by coupons</div>
-          <div id="anPlatforms"><div class="page-loader"><div class="spinner"></div></div></div>
-        </div>
-        <div class="dash-card">
-          <div class="sec-hd-title" style="margin-bottom:14px;">Top contributors</div>
-          <div id="anUsers"><div class="page-loader"><div class="spinner"></div></div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══════ PAGE: SETTINGS ══════ -->
-    <div class="page-section" id="pg-settings">
-      <div class="dash-card" style="margin-bottom:16px;">
-        <div class="sec-hd-title" style="margin-bottom:16px;">Platform settings</div>
-
-        <div class="settings-row">
-          <div>
-            <div class="settings-row-label">Auto-expire coupons</div>
-            <div class="settings-row-sub">Expiry date aane par automatically expire mark karo</div>
-          </div>
-          <label class="toggle-wrap">
-            <input type="checkbox" checked>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-
-        <div class="settings-row">
-          <div>
-            <div class="settings-row-label">Points per approval</div>
-            <div class="settings-row-sub">Har approved coupon pe submitter ko kitne points milenge</div>
-          </div>
-          <input type="number" class="settings-input" value="10" min="1" max="100">
-        </div>
-
-        <div class="settings-row">
-          <div>
-            <div class="settings-row-label">Points per claim</div>
-            <div class="settings-row-sub">Coupon claim karne par claimant ko kitne points milenge</div>
-          </div>
-          <input type="number" class="settings-input" value="2" min="0" max="50">
-        </div>
-
-        <div class="settings-row">
-          <div>
-            <div class="settings-row-label">New user registration</div>
-            <div class="settings-row-sub">Public registration allow karo</div>
-          </div>
-          <label class="toggle-wrap">
-            <input type="checkbox" checked>
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-      </div>
-
-      <div class="dash-card">
-        <div class="sec-hd-title" style="margin-bottom:16px;">Admin account</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
-          <div>
-            <label style="font-size:12px;color:#666;display:block;margin-bottom:5px;">Name</label>
-            <input type="text" class="settings-input" style="width:100%;text-align:left;padding:8px 12px;" id="settingName" placeholder="Admin name">
-          </div>
-          <div>
-            <label style="font-size:12px;color:#666;display:block;margin-bottom:5px;">Email</label>
-            <input type="email" class="settings-input" style="width:100%;text-align:left;padding:8px 12px;" id="settingEmail" placeholder="admin@email.com">
-          </div>
-        </div>
-        <button class="btn-approve" onclick="showToast('Settings saved!','success')" style="font-size:13px;">Save changes</button>
-      </div>
-    </div>
-
-  </div><!-- /admin-content -->
-</main>
-</div><!-- /admin-shell -->
-
-<div class="toast-container"></div>
-
-<!-- ══════════════════ SCRIPTS ══════════════════ -->
 <script src="api.js"></script>
 <script src="auth.js"></script>
+<script src="admin.js"></script>
 <script>
-/* ── Guard: admin only ─────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-  if (!requireAdminAuth()) return;
-
   const user = getUser();
-  if (user) {
-    document.getElementById('sbAdminName').textContent  = user.name  || 'Admin';
-    document.getElementById('sbAdminEmail').textContent = user.email || '';
-    const initials = (user.name||'AD').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    document.getElementById('adminAvatar').textContent = initials;
-    document.getElementById('settingName').value  = user.name  || '';
-    document.getElementById('settingEmail').value = user.email || '';
-  }
-
-  loadDashboard();
+  if (user) document.getElementById('admin-name').textContent = user.name;
 });
-
-/* ── Page switching ────────────────────────── */
-const pageTitles = {
-  dashboard:'Dashboard', requests:'Requests',
-  coupons:'All coupons', users:'Users',
-  analytics:'Analytics', settings:'Settings',
-};
-
-function showPage(name, btn) {
-  // Hide all pages
-  document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
-  document.getElementById('pg-' + name).classList.add('active');
-
-  // Update sidebar active state
-  document.querySelectorAll('.sb-link').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-
-  // Update topbar title
-  document.getElementById('topbarTitle').textContent = pageTitles[name] || name;
-
-  // Load data for the page
-  if (name === 'requests')  loadRequests();
-  if (name === 'coupons')   loadAllCoupons();
-  if (name === 'users')     loadUsers();
-  if (name === 'analytics') loadAnalytics();
-}
-
-/* ══════════════════════════════════════════════
-   DASHBOARD
-══════════════════════════════════════════════ */
-async function loadDashboard() {
-  try {
-    const data = await Admin.stats();
-
-    document.getElementById('st-users').textContent   = data.total_users  ?? '—';
-    document.getElementById('st-pending').textContent = data.pending       ?? '—';
-    document.getElementById('st-approved').textContent= data.approved      ?? '—';
-    document.getElementById('st-claims').textContent  = data.total_claims  ?? '—';
-
-    if (data.new_today) {
-      document.getElementById('st-users').nextElementSibling.nextElementSibling &&
-        null; // placeholder
-    }
-
-    // Pending badge in sidebar
-    if (data.pending > 0) {
-      const badge = document.getElementById('pendingBadge');
-      badge.textContent    = data.pending;
-      badge.style.display  = 'inline-block';
-      document.getElementById('notifDot').style.display = 'block';
-    }
-
-    // Approval rate for analytics
-    const total = (data.approved || 0) + (data.rejected || 0);
-    if (total > 0) {
-      const rate = Math.round((data.approved / total) * 100);
-      document.getElementById('an-approval').textContent = rate + '%';
-    }
-    document.getElementById('an-rejected').textContent = data.rejected ?? '—';
-
-    // Load pending requests preview (top 3)
-    await loadDashPending();
-
-    // Top platforms bar chart
-    renderPlatformBars(data.top_platforms || [], 'dashPlatforms');
-
-  } catch (err) {
-    showToast('Stats load nahi hua: ' + err.message, 'error');
-    // Show fallback
-    ['st-users','st-pending','st-approved','st-claims'].forEach(id => {
-      if (document.getElementById(id).textContent === '—')
-        document.getElementById(id).textContent = '0';
-    });
-  }
-}
-
-async function loadDashPending() {
-  const el = document.getElementById('dashPending');
-  try {
-    const data   = await Admin.coupons('pending');
-    const recent = (data.coupons || []).slice(0, 3);
-
-    if (!recent.length) {
-      el.innerHTML = `<div class="adm-empty"><div class="adm-empty-icon">✅</div><h3>Koi pending request nahi!</h3></div>`;
-      return;
-    }
-
-    el.innerHTML = recent.map(c => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #2a2a2a;">
-        <div>
-          <span class="plat-pill ${platPillClass(c.store)}">${c.store || '—'}</span>
-          <span style="font-size:14px;font-weight:600;color:#fff;margin-left:8px;">${formatDiscount(c)}</span>
-          <div style="font-size:11px;color:#555;margin-top:3px;">${c.title} · by ${c.submitter_name||'?'}</div>
-        </div>
-        <div style="display:flex;gap:6px;">
-          <button class="btn-approve" onclick="quickApprove(${c.id},this)">✓</button>
-          <button class="btn-reject"  onclick="openRejectPanel(${c.id}, 'dash-rp-${c.id}')">✕</button>
-        </div>
-      </div>
-      <div class="reject-panel" id="dash-rp-${c.id}">
-        ${rejectPanelHTML(c.id, 'dash-rp-' + c.id)}
-      </div>
-    `).join('');
-
-  } catch {
-    el.innerHTML = `<div style="color:#555;font-size:13px;padding:16px 0;">Data load nahi hua</div>`;
-  }
-}
-
-/* ══════════════════════════════════════════════
-   REQUESTS PAGE
-══════════════════════════════════════════════ */
-let allRequests = [];
-
-async function loadRequests() {
-  const status = document.getElementById('reqStatus')?.value || 'pending';
-  const el = document.getElementById('requestsList');
-  el.innerHTML = '<div class="page-loader"><div class="spinner"></div></div>';
-  try {
-    const data = await Admin.coupons(status);
-    allRequests = data.coupons || [];
-    renderRequests(allRequests);
-  } catch (err) {
-    el.innerHTML = `<div class="adm-empty"><div class="adm-empty-icon">⚠️</div><h3>${err.message}</h3></div>`;
-  }
-}
-
-function filterRequests() {
-  const q = document.getElementById('reqSearch').value.toLowerCase();
-  const filtered = allRequests.filter(c =>
-    (c.code||'').toLowerCase().includes(q) ||
-    (c.store||'').toLowerCase().includes(q) ||
-    (c.title||'').toLowerCase().includes(q)
-  );
-  renderRequests(filtered);
-}
-
-function renderRequests(coupons) {
-  const el = document.getElementById('requestsList');
-  if (!coupons.length) {
-    el.innerHTML = `<div class="adm-empty"><div class="adm-empty-icon">📭</div><h3>Koi coupon nahi mila</h3></div>`;
-    return;
-  }
-  el.innerHTML = coupons.map(c => `
-    <div class="req-card" id="rc-${c.id}">
-      <div class="req-top">
-        <div class="req-info">
-          <div class="req-plat-row">
-            <span class="plat-pill ${platPillClass(c.store)}">${c.store || 'General'}</span>
-            <span class="req-title-txt">${formatDiscount(c)}</span>
-            <span class="status-badge sb-${c.status}">${c.status}</span>
-          </div>
-          <div class="req-meta">
-            Code: <strong>${c.code}</strong> &nbsp;·&nbsp;
-            ${c.category || 'No category'} &nbsp;·&nbsp;
-            by ${c.submitter_name || 'Unknown'} &nbsp;·&nbsp;
-            ${formatDate(c.created_at)}
-          </div>
-        </div>
-        ${c.status === 'pending' ? `
-        <div class="req-actions">
-          <button class="btn-approve" onclick="quickApprove(${c.id}, this)">✓ Approve</button>
-          <button class="btn-reject"  onclick="openRejectPanel(${c.id}, 'rp-${c.id}')">✕ Reject</button>
-        </div>` : ''}
-      </div>
-
-      <div class="req-desc">${c.title}${c.description ? ' — ' + c.description : ''}</div>
-
-      ${c.reject_reason ? `
-        <div style="font-size:12px;color:#ef4444;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:7px;padding:8px 12px;margin-bottom:10px;">
-          ✕ Reject reason: ${c.reject_reason}
-        </div>` : ''}
-
-      <div class="req-bottom">
-        <span class="req-expiry">
-          Expires: ${c.expiry_date ? formatDate(c.expiry_date) : 'No expiry'} &nbsp;·&nbsp;
-          ${c.claim_count || 0} claims
-        </span>
-        ${c.status === 'pending' ? `<button class="btn-delete" onclick="deleteCoupon(${c.id}, 'rc-${c.id}')">🗑 Delete</button>` : ''}
-      </div>
-
-      <!-- Reject panel (hidden by default) -->
-      <div class="reject-panel" id="rp-${c.id}">
-        ${rejectPanelHTML(c.id, 'rp-' + c.id)}
-      </div>
-    </div>
-  `).join('');
-}
-
-/* ══════════════════════════════════════════════
-   ALL COUPONS TABLE
-══════════════════════════════════════════════ */
-let allCouponsData = [];
-
-async function loadAllCoupons() {
-  const status = document.getElementById('couponStatusFilter')?.value || '';
-  document.getElementById('couponsTable').innerHTML =
-    '<tr><td colspan="9"><div class="page-loader"><div class="spinner"></div></div></td></tr>';
-  try {
-    const data = await Admin.coupons(status);
-    allCouponsData = data.coupons || [];
-    renderCouponsTable(allCouponsData);
-  } catch (err) {
-    document.getElementById('couponsTable').innerHTML =
-      `<tr><td colspan="9" style="text-align:center;padding:24px;color:#555;">${err.message}</td></tr>`;
-  }
-}
-
-function filterCouponsTable() {
-  const q = document.getElementById('couponSearch').value.toLowerCase();
-  const filtered = allCouponsData.filter(c =>
-    (c.code||'').toLowerCase().includes(q) ||
-    (c.store||'').toLowerCase().includes(q)
-  );
-  renderCouponsTable(filtered);
-}
-
-function renderCouponsTable(coupons) {
-  const tbody = document.getElementById('couponsTable');
-  if (!coupons.length) {
-    tbody.innerHTML = '<tr><td colspan="9"><div class="adm-empty"><div class="adm-empty-icon">🎟</div><h3>Koi coupon nahi</h3></div></td></tr>';
-    return;
-  }
-  tbody.innerHTML = coupons.map(c => `
-    <tr id="ctr-${c.id}">
-      <td><span class="plat-pill ${platPillClass(c.store)}">${c.store || '—'}</span></td>
-      <td class="td-code">${c.code}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.title}</td>
-      <td>${formatDiscount(c)}</td>
-      <td style="font-size:12px;color:#888;">${c.category || '—'}</td>
-      <td>${c.claim_count || 0}</td>
-      <td style="font-size:12px;${isExpiringSoon(c.expiry_date)?'color:#f59e0b;':''}">${c.expiry_date ? formatDate(c.expiry_date) : '—'} ${isExpiringSoon(c.expiry_date)?'⚠':''}</td>
-      <td><span class="status-badge sb-${c.status}">${c.status}</span></td>
-      <td>
-        <div style="display:flex;gap:5px;">
-          ${c.status === 'pending' ? `
-            <button class="btn-approve" style="padding:4px 8px;font-size:11px;" onclick="quickApprove(${c.id},this)">✓</button>
-            <button class="btn-reject"  style="padding:4px 8px;font-size:11px;" onclick="quickReject(${c.id})">✕</button>
-          ` : ''}
-          <button class="btn-delete" onclick="deleteCoupon(${c.id},'ctr-${c.id}')">🗑</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-}
-
-/* ══════════════════════════════════════════════
-   USERS TABLE
-══════════════════════════════════════════════ */
-async function loadUsers() {
-  const search = document.getElementById('userSearch')?.value || '';
-  document.getElementById('usersTable').innerHTML =
-    '<tr><td colspan="8"><div class="page-loader"><div class="spinner"></div></div></td></tr>';
-  try {
-    const data  = await Admin.users(search);
-    const users = data.users || [];
-    if (!users.length) {
-      document.getElementById('usersTable').innerHTML =
-        '<tr><td colspan="8"><div class="adm-empty"><div class="adm-empty-icon">👥</div><h3>Koi user nahi mila</h3></div></td></tr>';
-      return;
-    }
-    document.getElementById('usersTable').innerHTML = users.map(u => `
-      <tr id="utr-${u.id}">
-        <td class="td-name">${u.name}</td>
-        <td class="td-email">${u.email}</td>
-        <td style="font-size:12px;color:#555;">${formatDate(u.created_at)}</td>
-        <td>${u.submitted || 0}</td>
-        <td>${u.claimed || 0}</td>
-        <td style="color:#f59e0b;font-weight:500;">⭐ ${u.points}</td>
-        <td>
-          <span style="font-size:12px;font-weight:500;color:${u.is_banned ? '#ef4444' : '#10b981'};">
-            ${u.is_banned ? '⛔ Banned' : '● Active'}
-          </span>
-        </td>
-        <td>
-          ${u.is_banned
-            ? `<button class="btn-approve" style="padding:4px 10px;font-size:11px;" onclick="toggleBan(${u.id},false,'utr-${u.id}')">Unban</button>`
-            : `<button class="btn-reject"  style="padding:4px 10px;font-size:11px;" onclick="toggleBan(${u.id},true,'utr-${u.id}')">Ban</button>`
-          }
-        </td>
-      </tr>
-    `).join('');
-  } catch (err) {
-    document.getElementById('usersTable').innerHTML =
-      `<tr><td colspan="8" style="text-align:center;padding:24px;color:#555;">${err.message}</td></tr>`;
-  }
-}
-
-/* ══════════════════════════════════════════════
-   ANALYTICS
-══════════════════════════════════════════════ */
-async function loadAnalytics() {
-  try {
-    const stats = await Admin.stats();
-
-    const total = (stats.approved||0) + (stats.rejected||0);
-    if (total > 0)
-      document.getElementById('an-approval').textContent =
-        Math.round((stats.approved / total) * 100) + '%';
-
-    document.getElementById('an-rejected').textContent = stats.rejected ?? '—';
-
-    renderPlatformBars(stats.top_platforms || [], 'anPlatforms');
-
-    // Top contributors from users
-    const ud = await Admin.users('');
-    const topUsers = (ud.users || [])
-      .sort((a,b) => b.points - a.points)
-      .slice(0, 5);
-
-    document.getElementById('anUsers').innerHTML = topUsers.length
-      ? topUsers.map(u => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a2a2a;">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:#fff;">${u.name}</div>
-              <div style="font-size:11px;color:#555;">${u.submitted||0} submitted</div>
-            </div>
-            <span style="color:#f59e0b;font-weight:600;font-size:13px;">⭐ ${u.points}</span>
-          </div>`).join('')
-      : '<div style="color:#555;font-size:13px;">No data</div>';
-
-  } catch (err) {
-    showToast('Analytics load nahi hua', 'error');
-  }
-}
-
-/* ══════════════════════════════════════════════
-   ACTIONS
-══════════════════════════════════════════════ */
-async function quickApprove(id, btn) {
-  if (btn) { btn.disabled = true; btn.textContent = '...'; }
-  try {
-    await Admin.reviewCoupon(id, 'approved');
-    showToast('✓ Coupon approved! +10 pts submitter ko', 'success');
-    document.getElementById('rc-' + id)?.remove();
-    document.getElementById('ctr-' + id)?.remove();
-    refreshPendingBadge();
-    loadDashPending();
-  } catch (err) {
-    showToast(err.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '✓ Approve'; }
-  }
-}
-
-function openRejectPanel(id, panelId) {
-  // Close other open panels
-  document.querySelectorAll('.reject-panel.open').forEach(p => {
-    if (p.id !== panelId) p.classList.remove('open');
-  });
-  document.getElementById(panelId)?.classList.toggle('open');
-}
-
-function rejectPanelHTML(id, panelId) {
-  return `
-    <div class="reason-chips">
-      <span class="r-chip" onclick="selChip(this,'Code already exists')">Code already exists</span>
-      <span class="r-chip" onclick="selChip(this,'Already expired')">Already expired</span>
-      <span class="r-chip" onclick="selChip(this,'Incorrect information')">Incorrect info</span>
-      <span class="r-chip" onclick="selChip(this,'Spam')">Spam</span>
-      <span class="r-chip" onclick="selChip(this,'Other')">Other</span>
-    </div>
-    <textarea class="reject-ta" id="rt-${id}" placeholder="Reason likhein..."></textarea>
-    <div class="reject-btn-row">
-      <button class="btn-reject" onclick="confirmReject(${id},'${panelId}')" style="flex:1;">Confirm reject</button>
-      <button class="btn-approve" onclick="document.getElementById('${panelId}').classList.remove('open')" style="flex:1;">Cancel</button>
-    </div>`;
-}
-
-function selChip(el, reason) {
-  const panel = el.closest('.reject-panel');
-  panel.querySelectorAll('.r-chip').forEach(c => c.classList.remove('on'));
-  el.classList.add('on');
-  const ta = panel.querySelector('.reject-ta');
-  if (ta) ta.value = reason;
-}
-
-async function confirmReject(id, panelId) {
-  const reason = document.getElementById('rt-' + id)?.value.trim();
-  if (!reason) { showToast('Reason daalo pehle', 'error'); return; }
-  try {
-    await Admin.reviewCoupon(id, 'rejected', reason);
-    showToast('Coupon rejected', 'info');
-    document.getElementById('rc-' + id)?.remove();
-    document.getElementById('ctr-' + id)?.remove();
-    refreshPendingBadge();
-    loadDashPending();
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-}
-
-function quickReject(id) {
-  const reason = prompt('Rejection reason:');
-  if (!reason) return;
-  Admin.reviewCoupon(id, 'rejected', reason)
-    .then(() => {
-      showToast('Coupon rejected', 'info');
-      document.getElementById('ctr-' + id)?.remove();
-      refreshPendingBadge();
-    })
-    .catch(err => showToast(err.message, 'error'));
-}
-
-async function deleteCoupon(id, rowId) {
-  if (!confirm('Is coupon ko delete karna chahte ho?')) return;
-  try {
-    await Admin.deleteCoupon(id);
-    showToast('Coupon deleted', 'info');
-    document.getElementById(rowId)?.remove();
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-}
-
-async function toggleBan(userId, ban, rowId) {
-  const action = ban ? 'ban' : 'unban';
-  if (!confirm(`Is user ko ${action} karna chahte ho?`)) return;
-  try {
-    await Admin.banUser(userId, ban);
-    showToast(`User ${action}ned`, ban ? 'info' : 'success');
-    loadUsers();
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-}
-
-/* ── Pending badge refresh ─────────────────── */
-async function refreshPendingBadge() {
-  try {
-    const s = await Admin.stats();
-    const badge = document.getElementById('pendingBadge');
-    if (s.pending > 0) {
-      badge.textContent   = s.pending;
-      badge.style.display = 'inline-block';
-    } else {
-      badge.style.display = 'none';
-      document.getElementById('notifDot').style.display = 'none';
-    }
-    document.getElementById('st-pending').textContent = s.pending ?? 0;
-  } catch {}
-}
-
-/* ══════════════════════════════════════════════
-   HELPERS
-══════════════════════════════════════════════ */
-function platPillClass(store) {
-  const s = (store || '').toLowerCase();
-  if (s.includes('paytm'))    return 'pp-paytm';
-  if (s.includes('swiggy'))   return 'pp-swiggy';
-  if (s.includes('amazon'))   return 'pp-amazon';
-  if (s.includes('uber'))     return 'pp-uber';
-  if (s.includes('zomato'))   return 'pp-zomato';
-  if (s.includes('flipkart')) return 'pp-flipkart';
-  return 'pp-default';
-}
-
-function formatDiscount(c) {
-  if (!c.discount_value) return c.title || 'Deal';
-  return c.discount_type === 'percent'
-    ? `${c.discount_value}% off`
-    : `₹${c.discount_value} off`;
-}
-
-function isExpiringSoon(dateStr) {
-  if (!dateStr) return false;
-  const days = Math.ceil((new Date(dateStr) - new Date()) / 86400000);
-  return days >= 0 && days <= 5;
-}
-
-function renderPlatformBars(platforms, containerId) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-
-  if (!platforms.length) {
-    el.innerHTML = '<div style="color:#555;font-size:13px;">No data</div>';
-    return;
-  }
-
-  const max = Math.max(...platforms.map(p => p.cnt || 0), 1);
-  const colors = ['#6366f1','#10b981','#f59e0b','#ef4444','#a29bfe'];
-
-  el.innerHTML = platforms.map((p, i) => `
-    <div class="bar-row">
-      <span class="bar-name">${p.store || 'Other'}</span>
-      <div class="bar-bg">
-        <div class="bar-fill" style="width:${Math.round((p.cnt/max)*100)}%;background:${colors[i%colors.length]};"></div>
-      </div>
-      <span class="bar-count">${p.cnt}</span>
-    </div>
-  `).join('');
-}
-
-function logoutAdmin() {
-  localStorage.removeItem('cs_token');
-  localStorage.removeItem('cs_user');
-  window.location.href = 'login.html';
-}
 </script>
 </body>
 </html>

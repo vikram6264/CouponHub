@@ -7,31 +7,14 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<nav class="navbar">
-  <a href="index.html" class="nav-logo">Coupon<span>Share</span></a>
-  <div class="nav-right">
-    <div class="pts-badge" id="ptsDisplay" style="display:none;">
-      <span class="pts-icon"></span>
-      <span id="ptsNum">0</span> pts
-    </div>
-    <div style="display:none;" id="authBtns">
-      <a href="login.html" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--text);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-right:8px;">Login</a>
-      <a href="register.html" style="background:var(--purple);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">Register</a>
-    </div>
-    <div id="userArea" style="display:none;position:relative;">
-      <div class="avatar" id="avatarBtn" onclick="toggleDD()">
-        <span id="avatarInitials">?</span>
-      </div>
-      <div class="avatar-dd" id="avatarDD">
-        <a href="browse.html">Home Page</a>
-        <a href="submit.html">Share a Coupon</a>
-        <a href="dashboard.html" class="active">Dashboard</a>
-        <hr>
-        <a href="#" class="dd-logout" onclick="logout()">Logout</a>
-      </div>
-    </div>
-  </div>
-</nav>
+<div id="navbar-root"></div>
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="navbar.js"></script>
+<script>
+  const pageReady = requireAuth();
+  if (pageReady) renderNavbar('dashboard');
+</script>
 
 <div class="container">
   <div class="page-header" style="margin-bottom: 32px;">
@@ -54,17 +37,40 @@
   </div>
 </div>
 
-<script src="api.js"></script>
-<script src="auth.js"></script>
 <script>
 function copyCode(code) {
-  navigator.clipboard.writeText(code);
-  showToast('Code Copied!');
+  if (!code) return;
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(code)
+      .then(() => showToast('Code copied: ' + code, 'success'))
+      .catch(() => fallbackCopy(code));
+  } else {
+    fallbackCopy(code);
+  }
+}
+function fallbackCopy(code) {
+  const ta = document.createElement('textarea');
+  ta.value = code; document.body.appendChild(ta);
+  ta.select(); document.execCommand('copy');
+  document.body.removeChild(ta);
+  showToast('Code copied: ' + code, 'success');
+}
+
+function formatDiscount(c) {
+  if (c.discount_type === 'percent' && c.discount_value) return `${c.discount_value}% OFF`;
+  if (c.discount_type === 'flat' && c.discount_value) return `₹${c.discount_value} OFF`;
+  if (c.discount_type === 'bogo') return 'BOGO';
+  if (c.discount_type === 'free_shipping') return 'Free Shipping';
+  return 'DEAL';
+}
+
+function copyIcon(code) {
+  return `<div class="cc-copy-icon" role="button" tabindex="0" onclick="copyCode(this.dataset.code)" data-code="${escapeHtml(code)}" title="Copy code">⧉</div>`;
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  if (!requireAuth()) return;
-  
+  if (!pageReady) return;
+
   // Load Submissions
   try {
     const submissions = await Auth.mySubmissions();
@@ -78,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>`;
     } else {
       const stats = { pending: 0, approved: 0, rejected: 0 };
-      submissions.forEach(c => stats[c.status]++);
+      submissions.forEach(c => { if (stats[c.status] !== undefined) stats[c.status]++; });
 
       content.innerHTML = `
         <div class="stats-row" style="margin-bottom:24px;">
@@ -89,21 +95,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="coupons-grid">
           ${submissions.map(c => {
-            let badgeColor = c.status === 'approved' ? 'var(--green)' : c.status === 'rejected' ? 'var(--red)' : 'var(--amber)';
+            const badgeColor = c.status === 'approved' ? 'var(--green)' : c.status === 'rejected' ? 'var(--red)' : 'var(--amber)';
             return `
             <div class="coupon-card">
               <div class="cc-top">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                  <span class="plat-badge ${platformClass(c.store)}">${c.store || 'General'}</span>
-                  <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid ${badgeColor};color:${badgeColor};text-transform:uppercase;letter-spacing:0.5px;">${c.status}</span>
+                  <span class="plat-badge ${platformClass(c.store)}">${escapeHtml(c.store || 'General')}</span>
+                  <span style="font-size:10px;font-weight:700;padding:4px 10px;border-radius:20px;border:1px solid ${badgeColor};color:${badgeColor};text-transform:uppercase;letter-spacing:0.5px;">${escapeHtml(c.status)}</span>
                 </div>
-                <div class="cc-discount" style="font-size:22px;margin-bottom:6px;">${c.title}</div>
-                <div class="cc-desc">${c.discount_type === 'percent' ? c.discount_value+'% OFF' : c.discount_type === 'flat' ? '₹'+c.discount_value+' OFF' : c.discount_type} - ${c.description || 'No description'}</div>
+                <div class="cc-discount" style="font-size:22px;margin-bottom:6px;">${escapeHtml(c.title)}</div>
+                <div class="cc-desc">${escapeHtml(formatDiscount(c))} — ${escapeHtml(c.description || 'No description')}</div>
                 <div class="cc-codebox" style="margin-top:16px;">
-                  <span class="cc-code">${c.code}</span>
-                  <div class="cc-copy-icon" onclick="copyCode('${c.code}')" title="Copy code">📋</div>
+                  <span class="cc-code">${escapeHtml(c.code)}</span>
+                  ${copyIcon(c.code)}
                 </div>
-                ${c.reject_reason ? `<div style="margin-top:16px;font-size:13px;color:var(--red);background:rgba(239,68,68,0.1);padding:10px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);"><strong>Reason:</strong> ${c.reject_reason}</div>` : ''}
+                ${c.reject_reason ? `<div style="margin-top:16px;font-size:13px;color:var(--red);background:rgba(239,68,68,0.1);padding:10px 14px;border-radius:8px;border:1px solid rgba(239,68,68,0.2);"><strong>Reason:</strong> ${escapeHtml(c.reject_reason)}</div>` : ''}
               </div>
               <div class="cc-bottom">
                 <span class="cc-expiry">Submitted on ${formatDate(c.created_at)}</span>
@@ -113,7 +119,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>`;
     }
   } catch (e) {
-    document.getElementById('submissions-content').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${e.message}</p></div>`;
+    document.getElementById('submissions-content').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${escapeHtml(e.message)}</p></div>`;
   }
 
   // Load Claims
@@ -131,28 +137,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       content.innerHTML = `
         <div class="coupons-grid">
-          ${claims.map(c => {
-            const discount = c.discount_type === 'percent' ? c.discount_value+'% OFF' : c.discount_type === 'flat' ? '₹'+c.discount_value+' OFF' : c.discount_type;
-            return `
+          ${claims.map(c => `
             <div class="coupon-card">
               <div class="cc-top">
-                <span class="plat-badge ${platformClass(c.store)}">${c.store || 'General'}</span>
-                <div class="cc-discount" style="font-size:22px;margin-bottom:6px;">${c.title}</div>
-                <div class="cc-desc">${discount} - ${c.description || 'Verified working deal!'}</div>
+                <span class="plat-badge ${platformClass(c.store)}">${escapeHtml(c.store || 'General')}</span>
+                <div class="cc-discount" style="font-size:22px;margin-bottom:6px;">${escapeHtml(c.title)}</div>
+                <div class="cc-desc">${escapeHtml(formatDiscount(c))} — ${escapeHtml(c.description || 'Verified working deal!')}</div>
                 <div class="cc-codebox" style="margin-top:16px;">
-                  <span class="cc-code">${c.code}</span>
-                  <div class="cc-copy-icon" onclick="copyCode('${c.code}')" title="Copy code">📋</div>
+                  <span class="cc-code">${escapeHtml(c.code)}</span>
+                  ${copyIcon(c.code)}
                 </div>
               </div>
               <div class="cc-bottom">
                 <span class="cc-expiry">Claimed on ${formatDate(c.claimed_at)}</span>
               </div>
-            </div>`
-          }).join('')}
+            </div>`).join('')}
         </div>`;
     }
   } catch (e) {
-    document.getElementById('claims-content').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${e.message}</p></div>`;
+    document.getElementById('claims-content').innerHTML = `<div class="empty-state"><h3>Error</h3><p>${escapeHtml(e.message)}</p></div>`;
   }
 });
 </script>

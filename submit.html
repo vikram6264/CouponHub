@@ -9,31 +9,15 @@
 </head>
 <body>
 
-<nav class="navbar">
-  <a href="index.html" class="nav-logo">Coupon<span>Share</span></a>
-  <div class="nav-right">
-    <div class="pts-badge" id="ptsDisplay" style="display:none;">
-      <span class="pts-icon"></span>
-      <span id="ptsNum">0</span> pts
-    </div>
-    <div style="display:none;" id="authBtns">
-      <a href="login.html" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--text);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-right:8px;">Login</a>
-      <a href="register.html" style="background:var(--purple);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">Register</a>
-    </div>
-    <div id="userArea" style="display:none;position:relative;">
-      <div class="avatar" id="avatarBtn" onclick="toggleDD()">
-        <span id="avatarInitials">?</span>
-      </div>
-      <div class="avatar-dd" id="avatarDD">
-        <a href="browse.html">Home Page</a>
-        <a href="submit.html">Share a Coupon</a>
-        <a href="dashboard.html">Dashboard</a>
-        <hr>
-        <a href="#" class="dd-logout" onclick="logout()">Logout</a>
-      </div>
-    </div>
-  </div>
-</nav>
+<div id="navbar-root"></div>
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="navbar.js"></script>
+<script>
+  // Redirects to login when not authenticated; page logic below is gated on pageReady
+  const pageReady = requireAuth();
+  if (pageReady) renderNavbar('submit');
+</script>
 
 <div class="container">
   <div class="page-header" style="max-width: 740px; margin: 0 auto 32px;">
@@ -46,9 +30,9 @@
   </div>
 
   <div class="stepper-wrap">
-    <button class="step-btn active" id="step-btn-1">1. Platform</button>
-    <button class="step-btn" id="step-btn-2">2. Coupon details</button>
-    <button class="step-btn" id="step-btn-3">3. Preview &amp; submit</button>
+    <button class="step-btn active" id="step-btn-1" onclick="goToStep(1)">1. Platform</button>
+    <button class="step-btn" id="step-btn-2" onclick="goToStep(2)">2. Coupon details</button>
+    <button class="step-btn" id="step-btn-3" onclick="goToStep(3)">3. Preview &amp; submit</button>
   </div>
 
   <!-- STEP 1 -->
@@ -57,18 +41,6 @@
     <div class="card-subtitle">Platform select karein ya khud add karein</div>
     <div class="platform-grid" id="platform-grid">
       <div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:20px">Loading platforms...</div>
-    </div>
-    <div class="field-group" id="fg-platform-select">
-      <label>Select Platform <span class="req">*</span></label>
-      <select id="platform-select">
-        <option value="">-- Select Platform --</option>
-      </select>
-      <div class="error-msg">Platform select karo</div>
-    </div>
-    <div class="field-group" id="fg-platform-name">
-      <label>Platform Name <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-      <input type="text" id="platform-name" placeholder="e.g. Myntra, Flipkart, Other store" />
-      <div class="error-msg">Platform name daalo agar select nahi kiya</div>
     </div>
     <div class="field-group" id="fg-platform-url">
       <label>Platform URL <span style="color:var(--muted);font-weight:400">(optional)</span></label>
@@ -186,54 +158,24 @@
 
 </div>
 
-<script src="api.js"></script>
-<script src="auth.js"></script>
 <script>
-  if (!requireAuth()) { }
-
   const state = { platform: null, platformEmoji: '', platformName: '', platforms: [], categories: [] };
   let currentStep = 1;
   let discountType = 'percent';
 
   async function init() {
     try {
-      const data = await apiFetch('/api/platforms');
-      state.platforms = data.platforms;
-    } catch(e) {
-      state.platforms = [];
-    }
-
-    if (!state.platforms.length) {
-      state.platforms = [
-        { id: 'amazon', name: 'Amazon', emoji: '📦' },
-        { id: 'flipkart', name: 'Flipkart', emoji: '🛒' },
-        { id: 'zomato', name: 'Zomato', emoji: '🍔' },
-        { id: 'swiggy', name: 'Swiggy', emoji: '🛵' },
-        { id: 'myntra', name: 'Myntra', emoji: '👗' },
-        { id: 'nykaa', name: 'Nykaa', emoji: '💄' },
-        { id: 'ajio', name: 'Ajio', emoji: '🧥' },
-        { id: 'other', name: 'Other', emoji: '🌐' },
-      ];
-    }
-
+      const res = await apiFetch('/api/platforms');
+      const data = await res.json();
+      state.platforms = data.platforms || [];
+    } catch(e) { /* backend offline */ }
     renderPlatforms();
-    document.getElementById('platform-select')?.addEventListener('change', (e) => {
-      selectPlatformById(e.target.value);
-    });
 
     try {
-      const data = await apiFetch('/api/categories');
-      state.categories = data.categories;
-    } catch(e) {
-      state.categories = [];
-    }
-    if (!state.categories.length) {
-      state.categories = [
-        'Fashion & Apparel', 'Electronics', 'Groceries & Food',
-        'Travel & Hotels', 'Beauty & Health', 'Home & Furniture',
-        'Books & Education', 'Gaming', 'Sports & Fitness', 'Other',
-      ];
-    }
+      const res = await apiFetch('/api/categories');
+      const data = await res.json();
+      state.categories = data.categories || [];
+    } catch(e) {}
     const sel = document.getElementById('coupon-category');
     state.categories.forEach(cat => {
       const opt = document.createElement('option');
@@ -244,21 +186,22 @@
 
   function renderPlatforms() {
     const grid = document.getElementById('platform-grid');
+    if (!state.platforms.length) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:24px">
+          <div style="margin-bottom:12px">⚠️ Platform list load nahi ho payi</div>
+          <button class="btn btn-secondary btn-sm" onclick="init()">Retry</button>
+        </div>`;
+      return;
+    }
     grid.innerHTML = state.platforms.map(p => `
-      <div class="platform-tile" data-id="${p.id}" data-name="${p.name}" data-emoji="${p.emoji}"
-           onclick="selectPlatform(this)">
+      <div class="platform-tile" data-id="${p.id}" data-name="${escapeHtml(p.name)}" data-emoji="${p.emoji}"
+           role="button" tabindex="0" onclick="selectPlatform(this)"
+           onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selectPlatform(this)}">
         <span class="emoji">${p.emoji}</span>
-        <span class="label">${p.name}</span>
+        <span class="label">${escapeHtml(p.name)}</span>
       </div>
     `).join('');
-
-    const select = document.getElementById('platform-select');
-    if (select) {
-      select.innerHTML = `<option value="">-- Select Platform --</option>` +
-        state.platforms.map(p => `<option value="${p.id}" data-emoji="${p.emoji}" data-name="${p.name}">${p.emoji} ${p.name}</option>`).join('');
-      select.value = state.platform || '';
-    }
-    updatePlatformSelection();
   }
 
   function goToStep(step) {
@@ -277,22 +220,7 @@
   }
 
   function validateStep1() {
-    const fg = document.getElementById('fg-platform-select');
-    const nameEl = document.getElementById('platform-name');
-    const platformName = nameEl.value.trim();
-
-    if (!state.platform && !platformName) {
-      fg.classList.add('has-error');
-      showToast('Platform select karo ya platform name daalo!', 'error');
-      return false;
-    }
-
-    if (!state.platform && platformName) {
-      state.platformName = platformName;
-      state.platformEmoji = '🌐';
-    }
-
-    fg.classList.remove('has-error');
+    if (!state.platform) { showToast('Platform select karo!', 'error'); return false; }
     return true;
   }
 
@@ -313,35 +241,11 @@
   }
 
   function selectPlatform(tile) {
+    document.querySelectorAll('.platform-tile').forEach(t => t.classList.remove('selected'));
+    tile.classList.add('selected');
     state.platform = tile.dataset.id;
     state.platformName = tile.dataset.name;
     state.platformEmoji = tile.dataset.emoji;
-    updatePlatformSelection();
-  }
-
-  function selectPlatformById(platformId) {
-    if (!platformId) {
-      state.platform = null;
-      state.platformName = '';
-      state.platformEmoji = '';
-      updatePlatformSelection();
-      return;
-    }
-    const platform = state.platforms.find(p => p.id === platformId);
-    if (platform) {
-      state.platform = platform.id;
-      state.platformName = platform.name;
-      state.platformEmoji = platform.emoji;
-      updatePlatformSelection();
-    }
-  }
-
-  function updatePlatformSelection() {
-    document.querySelectorAll('.platform-tile').forEach(t => {
-      t.classList.toggle('selected', t.dataset.id === state.platform);
-    });
-    const select = document.getElementById('platform-select');
-    if (select) select.value = state.platform || '';
   }
 
   function selectDiscount(pill) {
@@ -400,7 +304,6 @@
     btn.disabled = true;
     btn.textContent = '⏳ Submitting...';
 
-    const platformNameInput = document.getElementById('platform-name').value.trim();
     const payload = {
       title: document.getElementById('coupon-title').value.trim(),
       code: document.getElementById('coupon-code').value.trim().toUpperCase(),
@@ -408,7 +311,7 @@
       category: document.getElementById('coupon-category').value,
       discount_type: discountType,
       discount_value: document.getElementById('discount-value').value || null,
-      store: state.platformName || platformNameInput || 'Other',
+      store: state.platformName,
       expiry_date: document.getElementById('expiry-date').value || null,
     };
 
@@ -431,7 +334,7 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', init);
+  if (pageReady) document.addEventListener('DOMContentLoaded', init);
 </script>
 </body>
 </html>

@@ -9,13 +9,13 @@ conn = connection_pool.get_connection()
 cur = conn.cursor()
 
 # Admin Account
-admin_email = "admin@couponshare.com"
-admin_password = "admin123"
+admin_email = "vikrampatel0232@gmail.com"
+admin_password = "admin@6264"
 admin_hashed = hash_password(admin_password)
 
 # Regular User Account
-user_email = "user@couponshare.com"
-user_password = "user123"
+user_email = "vikram"
+user_password = "vikram123"
 user_hashed = hash_password(user_password)
 
 accounts = [

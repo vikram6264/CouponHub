@@ -102,31 +102,11 @@
 </head>
 <body>
 
-<nav class="navbar">
-  <a href="index.html" class="nav-logo">Coupon<span>Share</span></a>
-  <div class="nav-right">
-    <div class="pts-badge" id="ptsDisplay" style="display:none;">
-      <span class="pts-icon"></span>
-      <span id="ptsNum">0</span> pts
-    </div>
-    <div style="display:none;" id="authBtns">
-      <a href="login.html" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--text);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-right:8px;">Login</a>
-      <a href="register.html" style="background:var(--purple);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">Register</a>
-    </div>
-    <div id="userArea" style="display:none;position:relative;">
-      <div class="avatar" id="avatarBtn" onclick="toggleDD()">
-        <span id="avatarInitials">?</span>
-      </div>
-      <div class="avatar-dd" id="avatarDD">
-        <a href="browse.html">Home Page</a>
-        <a href="submit.html">Share a Coupon</a>
-        <a href="dashboard.html">Dashboard</a>
-        <hr>
-        <a href="#" class="dd-logout" onclick="logout()">Logout</a>
-      </div>
-    </div>
-  </div>
-</nav>
+<div id="navbar-root"></div>
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="navbar.js"></script>
+<script>renderNavbar('home');</script>
 
 <section class="hero">
   <h1>Never pay full price again.</h1>
@@ -155,7 +135,5 @@
   </div>
 </section>
 
-<script src="api.js"></script>
-<script src="auth.js"></script>
 </body>
 </html>

@@ -12,41 +12,21 @@
 <body>
 
 <!-- ═══════════════════ NAVBAR ══════════════════════ -->
-<nav class="navbar">
-  <a href="index.html" class="nav-logo">Coupon<span>Share</span></a>
-
-  <div class="nav-right">
-    <div class="pts-badge" id="ptsDisplay" style="display:none;">
-      <span class="pts-icon"></span>
-      <span id="ptsNum">0</span> pts
-    </div>
-    <div style="display:none;" id="authBtns">
-      <a href="login.html" style="background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--text);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;margin-right:8px;">Login</a>
-      <a href="register.html" style="background:var(--purple);color:#fff;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:500;text-decoration:none;">Register</a>
-    </div>
-    <div id="userArea" style="display:none;position:relative;">
-      <div class="avatar" id="avatarBtn" onclick="toggleDD()">
-        <span id="avatarInitials">?</span>
-      </div>
-      <div class="avatar-dd" id="avatarDD">
-        <a href="browse.html">Home Page</a>
-        <a href="submit.html">Share a Coupon</a>
-        <a href="dashboard.html">Dashboard</a>
-        <hr>
-        <a href="#" class="dd-logout" onclick="logout()">Logout</a>
-      </div>
-    </div>
-  </div>
-</nav>
+<div id="navbar-root"></div>
+<script src="api.js"></script>
+<script src="auth.js"></script>
+<script src="navbar.js"></script>
+<script>renderNavbar('browse');</script>
 
 <!-- ═══════════════════ SEARCH ══════════════════════ -->
 <div class="search-section">
   <div class="search-row">
-    <input class="search-box" id="searchInput" type="text"
+    <input class="search-box" id="searchInput" type="search"
       placeholder="Search coupons — Swiggy, Amazon, Paytm..."
+      aria-label="Search coupons"
       oninput="onSearch()">
-    <button class="filter-btn" onclick="toggleFilterPanel()">
-      <span class="filter-icon"></span> Filter
+    <button class="filter-btn" onclick="toggleFilterPanel()" aria-label="Filters">
+      <span class="filter-icon">⚙</span> Filter
     </button>
   </div>
 </div>
@@ -54,24 +34,6 @@
 <!-- ═══════════════════ CATEGORIES ══════════════════ -->
 <div class="cats-row" id="catsRow">
   <button class="cat active" onclick="selCat(this,'')">All</button>
-  <button class="cat" onclick="selCat(this,'Recharge')">
-    <span class="cat-icon"></span> Recharge
-  </button>
-  <button class="cat" onclick="selCat(this,'Food')">
-    <span class="cat-icon"></span> Food
-  </button>
-  <button class="cat" onclick="selCat(this,'Shopping')">
-    <span class="cat-icon"></span> Shopping
-  </button>
-  <button class="cat" onclick="selCat(this,'Travel')">
-    <span class="cat-icon"></span> Travel
-  </button>
-  <button class="cat" onclick="selCat(this,'Health')">
-    <span class="cat-icon"></span> Health
-  </button>
-  <button class="cat" onclick="selCat(this,'Entertainment')">
-    <span class="cat-icon"></span> Entertainment
-  </button>
 </div>
 
 <!-- ═══════════════════ STATS ═══════════════════════ -->
@@ -106,13 +68,14 @@
 </div>
 
 <!-- ═══════════════════ CTA BANNER ══════════════════ -->
-<div class="cta-banner" onclick="window.location.href='submit.html'">
+<div class="cta-banner" role="button" tabindex="0" onclick="window.location.href='submit.html'"
+     onkeydown="if(event.key==='Enter')window.location.href='submit.html'">
   <div class="cta-icon-box">
     <div class="cta-icon-inner"></div>
   </div>
   <div class="cta-text">
     <h4>Aapke paas unused coupons hain?</h4>
-    <p>Share karein — 10 points milenge har coupon ke liye ↗</p>
+    <p>Share karein — 5 points milenge har coupon ke liye ↗</p>
   </div>
 </div>
 
@@ -124,7 +87,7 @@
     <div class="modal-sub" id="claimModalSub">Platform — Discount</div>
     <div class="modal-codebox">
       <div class="modal-code" id="claimModalCode">CODE</div>
-      <div class="modal-meta" id="claimModalMeta"></div>
+      <div class="modal-meta" id="claimModalMeta">Tap to copy</div>
     </div>
     <button class="btn-copy" onclick="copyAndClose()">📋 Copy code & close</button>
   </div>
@@ -132,7 +95,7 @@
 
 <!-- LOGIN PROMPT MODAL -->
 <div class="overlay" id="loginOverlay" onclick="overlayClick(event,'loginOverlay')">
-  <div class="modal" style="max-width:360px;text-align:center;">
+  <div class="modal modal-narrow">
     <div class="modal-emoji">🔐</div>
     <div class="modal-title">Login karo pehle</div>
     <div class="modal-sub">Coupon claim karne ke liye login zaroori hai</div>
@@ -147,21 +110,38 @@
 <!-- ═══════════════════════════════════════════════════
      JAVASCRIPT
 ═══════════════════════════════════════════════════ -->
-<script src="api.js"></script>
-<script src="auth.js"></script>
 <script>
 /* ── State ─────────────────────────────────── */
-let currentPage     = 1;
-let currentCat      = '';
-let searchTimer     = null;
+let currentPage = 1;
+let currentCat = '';
+let searchTimer = null;
 let currentClaimCode = '';
-let allPages        = 1;
+let allPages = 1;
+let demoMode = false;          // true when backend unreachable
+const demoCodes = new Map();   // demo coupon id → code
 
 /* ══════════════════════════════════════════════
    INIT
 ══════════════════════════════════════════════ */
 function init() {
+  loadChips();
   loadCoupons(true);
+}
+
+/* ── Dynamic category chips (same list as submit form) ── */
+async function loadChips() {
+  try {
+    const res = await apiFetch('/api/categories');
+    const data = await res.json();
+    const row = document.getElementById('catsRow');
+    (data.categories || []).forEach(cat => {
+      const btn = document.createElement('button');
+      btn.className = 'cat';
+      btn.textContent = cat;
+      btn.onclick = () => selCat(btn, cat);
+      row.appendChild(btn);
+    });
+  } catch (e) { /* keep just the "All" chip */ }
 }
 
 /* ══════════════════════════════════════════════
@@ -175,19 +155,22 @@ async function loadCoupons(reset = false) {
     document.getElementById('loadMoreWrap').style.display = 'none';
   }
 
-  const params = new URLSearchParams({ page: currentPage, sort: 'newest' });
+  const params = new URLSearchParams({ page: currentPage });
   if (currentCat) params.set('category', currentCat);
   const search = document.getElementById('searchInput').value.trim();
-  if (search)   params.set('search', search);
+  if (search) params.set('search', search);
 
   try {
-    const data = await apiFetch('/api/coupons?' + params);
+    const res = await apiFetch('/api/coupons/browse?' + params);
+    if (!res.ok) throw new Error('Request failed');
+    const data = await res.json();
 
-    /* update stats */
+    demoMode = false;
+
     if (currentPage === 1) {
-      document.getElementById('statTotal').textContent  = (data.total_active || data.total || 0).toLocaleString('en-IN');
-      document.getElementById('statClaims').textContent = (data.claims_today || 0).toLocaleString('en-IN');
-      document.getElementById('statSavings').textContent = '₹' + (data.total_savings || '89K');
+      document.getElementById('statTotal').textContent  = Number(data.total_active || 0).toLocaleString('en-IN');
+      document.getElementById('statClaims').textContent = Number(data.claims_today || 0).toLocaleString('en-IN');
+      document.getElementById('statSavings').textContent = formatSavings(data.total_savings || 0);
     }
 
     const grid = document.getElementById('couponGrid');
@@ -201,38 +184,47 @@ async function loadCoupons(reset = false) {
           <h3>Koi coupon nahi mila</h3>
           <p>Is category mein abhi koi active coupon nahi hai</p>
         </div>`;
+      document.getElementById('loadMoreWrap').style.display = 'none';
       return;
     }
 
-    (data.coupons || []).forEach(c => grid.insertAdjacentHTML('beforeend', buildCard(c)));
+    coupons.forEach(c => grid.insertAdjacentHTML('beforeend', buildCard(c)));
 
     allPages = data.pages || 1;
     document.getElementById('loadMoreWrap').style.display =
       currentPage < allPages ? 'block' : 'none';
 
   } catch (err) {
-    document.getElementById('couponGrid').innerHTML = `
-      <div class="empty-state">
-        <div class="big">⚠️</div>
-        <h3>Server se connect nahi ho paya</h3>
-        <p>Backend chal raha hai? http://127.0.0.1:8000</p>
-      </div>`;
-
-    /* ── DEMO DATA when backend offline ── */
+    // Backend unreachable → demo data (honest label)
     loadDemoData();
+    showToast('Backend offline — demo data shown', 'info');
   }
+}
+
+function formatSavings(n) {
+  n = Number(n) || 0;
+  if (n >= 100000) return '₹' + (n / 100000).toFixed(1).replace(/\.0$/, '') + 'L';
+  if (n >= 1000)   return '₹' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return '₹' + n.toLocaleString('en-IN');
 }
 
 /* ── Demo data (when backend offline) ─────── */
 function loadDemoData() {
   const demo = [
-    {id:1,platform:'Paytm',  code:'PAY50NOW', discount:'₹50 off',  description:'On recharge of ₹199+',      expiry_date:'2025-03-31',is_multi_use:false,is_claimed_by_me:false,code_hidden:'PA****',claim_count:3},
-    {id:2,platform:'Swiggy', code:'SWIG40',   discount:'40% off',  description:'Min order ₹299',             expiry_date:'2025-02-28',is_multi_use:true, is_claimed_by_me:false,code_hidden:'SW****',claim_count:7},
-    {id:3,platform:'Amazon', code:'AMZ100',   discount:'₹100 off', description:'Electronics ₹999+',         expiry_date:'2025-04-15',is_multi_use:false,is_claimed_by_me:true, code_hidden:'AM****',claim_count:12},
-    {id:4,platform:'Uber',   code:'UBER75',   discount:'₹75 off',  description:'First 3 rides',              expiry_date:'2025-05-01',is_multi_use:true, is_claimed_by_me:false,code_hidden:'UB****',claim_count:5},
-    {id:5,platform:'Zomato', code:'ZOM30',    discount:'30% off',  description:'Orders above ₹399',         expiry_date:'2025-03-10',is_multi_use:true, is_claimed_by_me:false,code_hidden:'ZO****',claim_count:9},
-    {id:6,platform:'Flipkart',code:'FLIP200', discount:'₹200 off', description:'Fashion ₹999+',              expiry_date:'2025-04-20',is_multi_use:false,is_claimed_by_me:false,code_hidden:'FL****',claim_count:4},
+    {id:1, platform:'Paytm',   code:'PAY50NOW', discount:'₹50 off',  description:'On recharge of ₹199+',  expiry_date:futureDate(30), is_claimed_by_me:false, claim_count:3},
+    {id:2, platform:'Swiggy',  code:'SWIG40',   discount:'40% off',  description:'Min order ₹299',        expiry_date:futureDate(14), is_claimed_by_me:false, claim_count:7},
+    {id:3, platform:'Amazon',  code:'AMZ100',   discount:'₹100 off', description:'Electronics ₹999+',     expiry_date:futureDate(45), is_claimed_by_me:true,  claim_count:12},
+    {id:4, platform:'Zomato',  code:'ZOM30',    discount:'30% off',  description:'Orders above ₹399',     expiry_date:futureDate(7),  is_claimed_by_me:false, claim_count:9},
+    {id:5, platform:'Flipkart',code:'FLIP200',  discount:'₹200 off', description:'Fashion ₹999+',         expiry_date:futureDate(21), is_claimed_by_me:false, claim_count:4},
   ];
+
+  demoMode = true;
+  demoCodes.clear();
+  demo.forEach(c => {
+    demoCodes.set(c.id, c.code);
+    c.code_hidden = c.code.slice(0, 2) + '****';
+    if (c.is_claimed_by_me) c.code = c.code;
+  });
 
   document.getElementById('statTotal').textContent  = '1,248';
   document.getElementById('statClaims').textContent = '342';
@@ -243,43 +235,59 @@ function loadDemoData() {
   demo.forEach(c => grid.insertAdjacentHTML('beforeend', buildCard(c)));
 }
 
+function futureDate(days) {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /* ── Build one coupon card HTML ────────────── */
 function buildCard(c) {
-  const days   = daysLeft(c.expiry_date);
-  const expCls = days <= 3 ? 'cc-expiry soon' : 'cc-expiry';
-  const expTxt = days <= 0
-    ? 'Expired'
-    : days <= 3
-      ? `⚠️ ${days} days left`
-      : `${days} days left`;
+  const days = daysLeft(c.expiry_date);
+  const expCls = days !== null && days <= 3 ? 'cc-expiry soon' : 'cc-expiry';
+  const expTxt = days === null
+    ? 'No expiry date'
+    : days <= 0
+      ? 'Expired'
+      : days <= 3
+        ? `⚠️ ${days} day${days === 1 ? '' : 's'} left`
+        : `${days} days left`;
 
-  const platform = c.store || 'General';
-  const discount = c.discount_type === 'percent' && c.discount_value
-    ? `${c.discount_value}% OFF`
-    : c.discount_type === 'flat' && c.discount_value
-      ? `₹${c.discount_value} OFF`
-      : (c.discount_type || 'Deal');
-  const desc = c.description || 'No description available';
-  const code = c.code || 'N/A';
+  const platCls = platformClass(c.platform);
+  const isClaimed = !!c.is_claimed_by_me;
+  const displayCode = isClaimed ? escapeHtml(c.code || '') : escapeHtml(c.code_hidden || '****');
 
   return `
-    <div class="coupon-card" id="cc-${c.id}">
+    <div class="coupon-card" id="cc-${Number(c.id)}">
       <div class="cc-top">
-        <span class="plat-badge ${platformClass(platform)}">${platform}</span>
-        <div class="cc-discount">${discount}</div>
-        <div class="cc-desc">${desc}</div>
+        <span class="plat-badge ${platCls}">${escapeHtml(c.platform || 'Other')}</span>
+        <div class="cc-discount">${escapeHtml(c.discount || 'DEAL')}</div>
+        <div class="cc-desc">${escapeHtml(c.description || c.title || '')}</div>
         <div class="cc-codebox">
-          <span class="cc-code">${code}</span>
-          <div class="cc-copy-icon" onclick="copyCode('${code}')" title="Copy code"></div>
+          <span class="cc-code">${displayCode}</span>
+          <div class="cc-copy-icon" role="button" tabindex="0"
+               onclick="copyCode(this.dataset.code)"
+               data-code="${escapeHtml(isClaimed ? (c.code || '') : '')}"
+               title="${isClaimed ? 'Copy code' : 'Claim to reveal'}">⧉</div>
         </div>
       </div>
       <div class="cc-bottom">
         <span class="${expCls}">
           <span class="exp-icon"></span> ${expTxt}
         </span>
-        <button class="claim-btn" onclick="claimCoupon(${c.id},'${platform}','${discount}','${code}')">Claim</button>
+        ${isClaimed
+          ? `<button class="claim-btn claimed" disabled>✓ Claimed</button>`
+          : `<button class="claim-btn" onclick="claimCouponFromCard(this)"
+                     data-id="${Number(c.id)}"
+                     data-platform="${escapeHtml(c.platform || '')}"
+                     data-discount="${escapeHtml(c.discount || '')}">Claim</button>`
+        }
       </div>
     </div>`;
+}
+
+function claimCouponFromCard(btn) {
+  claimCoupon(btn.dataset.id, btn.dataset.platform, btn.dataset.discount);
 }
 
 /* ── Load more ─────────────────────────────── */
@@ -291,38 +299,50 @@ function loadMore() {
 /* ══════════════════════════════════════════════
    CLAIM
 ══════════════════════════════════════════════ */
-async function claimCoupon(id, platform, discount, code) {
+async function claimCoupon(id, platform, discount) {
   if (!isLoggedIn()) {
     document.getElementById('loginOverlay').classList.add('open');
     return;
   }
-  try {
-    const data = await apiFetch(`/api/coupons/${id}/claim`, { method: 'POST' });
-    currentClaimCode = data.code;
-    document.getElementById('claimModalSub').textContent  = `${platform} — ${discount}`;
-    document.getElementById('claimModalCode').textContent = data.code;
-    document.getElementById('claimModalMeta').textContent = 'Tap to copy';
-    document.getElementById('claimOverlay').classList.add('open');
 
-    /* update card UI */
-    const card = document.getElementById('cc-'+id);
-    if (card) {
-      card.querySelector('.cc-code').textContent = data.code;
-      const btn = card.querySelector('.claim-btn');
-      if (btn) { btn.textContent='Claimed'; btn.classList.add('claimed'); btn.disabled=true; }
-    }
+  // Demo mode: reveal locally, no server involved
+  if (demoMode) {
+    const code = demoCodes.get(id) || 'DEMO-CODE';
+    revealClaim(id, platform, discount, code);
+    showToast('Claimed (demo): ' + code, 'info');
+    return;
+  }
+
+  try {
+    const res = await apiFetch(`/api/coupons/${id}/claim`, { method: 'POST' });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || 'Claim failed');
+    revealClaim(id, platform, discount, data.code);
   } catch (err) {
-    /* demo mode */
-    currentClaimCode = code;
-    document.getElementById('claimModalSub').textContent  = `${platform} — ${discount}`;
-    document.getElementById('claimModalCode').textContent = code;
-    document.getElementById('claimModalMeta').textContent = 'Code copied to clipboard!';
-    document.getElementById('claimOverlay').classList.add('open');
-    const card = document.getElementById('cc-'+id);
-    if (card) {
-      card.querySelector('.cc-code').textContent = code;
-      const btn = card.querySelector('.claim-btn');
-      if (btn) { btn.textContent='Claimed'; btn.classList.add('claimed'); btn.disabled=true; }
+    if (err instanceof TypeError) {
+      // fetch() network failure
+      showToast('Server se connect nahi ho paya', 'error');
+    } else {
+      showToast(err.message, 'error');
+    }
+  }
+}
+
+function revealClaim(id, platform, discount, code) {
+  currentClaimCode = code;
+  document.getElementById('claimModalSub').textContent = `${platform} — ${discount}`;
+  document.getElementById('claimModalCode').textContent = code;
+  document.getElementById('claimModalMeta').textContent = 'Tap to copy';
+  document.getElementById('claimOverlay').classList.add('open');
+
+  const card = document.getElementById('cc-' + id);
+  if (card) {
+    card.querySelector('.cc-code').textContent = code;
+    const btn = card.querySelector('.claim-btn');
+    if (btn) {
+      btn.textContent = '✓ Claimed';
+      btn.classList.add('claimed');
+      btn.disabled = true;
     }
   }
 }
@@ -352,23 +372,8 @@ function toggleFilterPanel() {
 }
 
 /* ══════════════════════════════════════════════
-   HELPERS
+   HELPERS (shared ones live in api.js)
 ══════════════════════════════════════════════ */
-function platformClass(name) {
-  const n = (name || '').toLowerCase();
-  if (n.includes('paytm'))    return 'pb-paytm';
-  if (n.includes('swiggy'))   return 'pb-swiggy';
-  if (n.includes('amazon'))   return 'pb-amazon';
-  if (n.includes('uber'))     return 'pb-uber';
-  if (n.includes('zomato'))   return 'pb-zomato';
-  if (n.includes('flipkart')) return 'pb-flipkart';
-  return 'pb-default';
-}
-
-function daysLeft(dateStr) {
-  return Math.ceil((new Date(dateStr) - new Date()) / 86400000);
-}
-
 function copyCode(code) {
   if (!code) { showToast('Pehle coupon claim karo!', 'info'); return; }
   navigator.clipboard.writeText(code)
@@ -382,7 +387,6 @@ function copyCode(code) {
     });
 }
 
-
 /* ── Modals ────────────────────────────────── */
 function closeOverlay(id) {
   document.getElementById(id).classList.remove('open');
@@ -390,19 +394,11 @@ function closeOverlay(id) {
 function overlayClick(e, id) {
   if (e.target.id === id) closeOverlay(id);
 }
-
-/* ── Toast ─────────────────────────────────── */
-let toastTimer;
-function showToast(msg, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  const icons = { success: '✓', error: '✕', info: 'ℹ' };
-  t.className = `toast ${type}`;
-  t.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
-  container.appendChild(t);
-  requestAnimationFrame(() => t.classList.add('show'));
-  setTimeout(() => { t.classList.remove('show'); setTimeout(()=>t.remove(),400); }, 3000);
-}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open'));
+  }
+});
 
 /* ── Start ─────────────────────────────────── */
 init();

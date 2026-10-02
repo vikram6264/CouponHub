@@ -3,203 +3,35 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Login — CouponShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css">
-<style>
-  .login-container {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    max-width: 1000px;
-    margin: 0 auto;
-    padding: 2rem;
-  }
-  @media (max-width: 768px) {
-    .login-container {
-      grid-template-columns: 1fr;
-    }
-  }
-  .login-section {
-    padding: 2rem;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    background: rgba(255,255,255,0.02);
-  }
-  .login-section h2 {
-    margin-top: 0;
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-  }
-  .section-badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 1rem;
-  }
-  .section-badge.admin {
-    background: rgba(255, 107, 107, 0.15);
-    color: #ff6b6b;
-    border: 1px solid rgba(255, 107, 107, 0.3);
-  }
-  .section-badge.user {
-    background: rgba(108, 92, 231, 0.15);
-    color: #6c5ce7;
-    border: 1px solid rgba(108, 92, 231, 0.3);
-  }
-  .alert {
-    padding: 12px;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    font-size: 14px;
-    border: 1px solid;
-  }
-  .alert-error {
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    border-color: rgba(239, 68, 68, 0.2);
-  }
-  .alert.show {
-    display: block;
-  }
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  .form-group label {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 6px;
-    color: var(--muted);
-  }
-  .form-group input {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--card);
-    color: var(--text);
-    font-size: 14px;
-  }
-  .form-group input:focus {
-    outline: none;
-    border-color: var(--purple);
-    box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
-  }
-  .btn {
-    width: 100%;
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s;
-  }
-  .btn-primary {
-    background: var(--purple);
-    color: white;
-  }
-  .btn-primary:hover {
-    background: #5f3dc4;
-  }
-  .btn-primary:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  .subtitle {
-    color: var(--muted);
-    font-size: 13px;
-    margin-bottom: 1.5rem;
-  }
-  .nav-brand {
-    font-size: 20px;
-    font-weight: 700;
-    color: white;
-  }
-  .nav-brand span {
-    color: var(--purple);
-  }
-  .page-header {
-    text-align: center;
-    margin-bottom: 2rem;
-  }
-  .page-header h1 {
-    font-size: 32px;
-    font-weight: 800;
-    margin-bottom: 8px;
-  }
-</style>
 </head>
 <body>
-<div style="padding:1rem;text-align:center;border-bottom:1px solid var(--border);margin-bottom:2rem;">
-  <a href="index.html" class="nav-brand">Coupon<span>Share</span></a>
-</div>
+<div class="auth-page">
+  <div class="auth-box">
+    <a href="index.html" class="nav-brand" style="display:block;margin-bottom:1.5rem;font-family:'DM Sans',sans-serif;font-size:22px;font-weight:600;text-decoration:none;color:var(--purple)">Coupon<span style="color:var(--green)">Share</span></a>
+    <h2>Welcome back</h2>
+    <p class="subtitle">Login to your account to claim deals and earn points</p>
 
-<div class="page-header">
-  <h1>Login to CouponShare</h1>
-  <p style="color:var(--muted)">Choose your account type to continue</p>
-</div>
+    <div id="form-alert" class="alert alert-error"></div>
 
-<div class="login-container">
-  <!-- ADMIN LOGIN -->
-  <div class="login-section">
-    <div class="section-badge admin">👑 Admin</div>
-    <h2>Admin Login</h2>
-    <p class="subtitle">Access the admin dashboard to manage coupons and users</p>
-
-    <div id="admin-alert" class="alert alert-error" style="display:none;"></div>
-
-    <form id="admin-form">
+    <form id="login-form">
       <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="admin-email" placeholder="admin@couponshare.com" value="admin@couponshare.com" required>
+        <label for="email">Email / Username</label>
+        <input type="text" id="email" placeholder="you@example.com or username" autocomplete="username" required>
       </div>
       <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="admin-password" placeholder="••••••••" value="admin123" required>
+        <label for="password">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+          <button type="button" class="pw-toggle" tabindex="-1" onclick="togglePw('password', this)" aria-label="Show password">👁</button>
+        </div>
       </div>
-      <button type="submit" class="btn btn-primary" id="admin-btn">Login as Admin</button>
+      <button type="submit" class="btn btn-primary btn-full">Login</button>
     </form>
 
-    <!--<div style="margin-top:1rem;padding:12px;background:rgba(255,107,107,0.05);border-radius:8px;font-size:12px;color:var(--muted);">
-      <strong>Demo credentials:</strong><br/>
-      Email: admin@couponshare.com<br/>
-      Pass: admin123
-    </div>-->
-  </div>
-
-  <!-- USER LOGIN -->
-  <div class="login-section">
-    <div class="section-badge user">👤 User</div>
-    <h2>User Login</h2>
-    <p class="subtitle">Access your account to browse and submit coupons</p>
-
-    <div id="user-alert" class="alert alert-error" style="display:none;"></div>
-
-    <form id="user-form">
-      <div class="form-group">
-        <label>Email or Username</label>
-        <input type="text" id="user-email" placeholder="user@couponshare.com or username" value="user@couponshare.com" required>
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="user-password" placeholder="••••••••" value="user123" required>
-      </div>
-      <button type="submit" class="btn btn-primary" id="user-btn">Login as User</button>
-    </form>
-
-    <!--<div style="margin-top:1rem;padding:12px;background:rgba(108,92,231,0.05);border-radius:8px;font-size:12px;color:var(--muted);">
-      <strong>Demo credentials:</strong><br/>
-      Email: user@couponshare.com<br/>
-      Pass: user123
-    </div>-->
-
-    <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;font-size:12px;">
-      Don't have an account? <a href="register.html" style="color:var(--purple);text-decoration:none;font-weight:600;">Sign up free</a>
+    <div class="auth-footer">
+      Don't have an account? <a href="register.html">Sign up free</a>
     </div>
   </div>
 </div>
@@ -207,66 +39,33 @@
 <script src="api.js"></script>
 <script src="auth.js"></script>
 <script>
+function togglePw(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? '👁' : '🙈';
+  btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   if (isLoggedIn()) { window.location.href = 'browse.html'; return; }
 
-  // ADMIN LOGIN
-  document.getElementById('admin-form').addEventListener('submit', async (e) => {
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const btn = document.getElementById('admin-btn');
-    const alert = document.getElementById('admin-alert');
-    alert.style.display = 'none';
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div> Logging in...';
+    hideAlert('form-alert');
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Logging in...';
 
     try {
       const data = await Auth.login({
-        email: document.getElementById('admin-email').value.trim(),
-        password: document.getElementById('admin-password').value
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value
       });
-      
-      // Check if admin
-      if (!data.user.is_admin) {
-        throw new Error('This account is not an admin account');
-      }
-      
       saveLogin(data);
-      window.location.href = 'admin.html';
+      window.location.href = data.user.is_admin ? 'admin.html' : 'browse.html';
     } catch (err) {
-      alert.textContent = err.message;
-      alert.style.display = 'block';
-      btn.disabled = false;
-      btn.innerHTML = 'Login as Admin';
-    }
-  });
-
-  // USER LOGIN
-  document.getElementById('user-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = document.getElementById('user-btn');
-    const alert = document.getElementById('user-alert');
-    alert.style.display = 'none';
-    btn.disabled = true;
-    btn.innerHTML = '<div class="spinner"></div> Logging in...';
-
-    try {
-      const data = await Auth.login({
-        email: document.getElementById('user-email').value.trim(),
-        password: document.getElementById('user-password').value
-      });
-      
-      // Check if NOT admin (regular user)
-      if (data.user.is_admin) {
-        throw new Error('Please use the Admin login section');
-      }
-      
-      saveLogin(data);
-      window.location.href = 'browse.html';
-    } catch (err) {
-      alert.textContent = err.message;
-      alert.style.display = 'block';
-      btn.disabled = false;
-      btn.innerHTML = 'Login as User';
+      showAlert('form-alert', err.message);
+      btn.disabled = false; btn.textContent = 'Login';
     }
   });
 });

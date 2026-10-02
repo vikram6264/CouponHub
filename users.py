@@ -20,8 +20,14 @@ def register(data: UserRegister, db=Depends(get_db)):
 @router.post("/login")
 def login(data: UserLogin, db=Depends(get_db)):
     cur = get_cursor(db)
+    # Allow login with email OR display name
     cur.execute("SELECT * FROM users WHERE email=%s OR name=%s", (data.email, data.email))
     user = cur.fetchone()
+    # Legacy accounts were registered as "<username>@example.com" via an old
+    # frontend hack — accept bare usernames for those.
+    if not user and "@" not in data.email:
+        cur.execute("SELECT * FROM users WHERE email=%s", (data.email + "@example.com",))
+        user = cur.fetchone()
     if not user or not verify_password(data.password, user["password_hash"]):
         raise HTTPException(401, "Invalid credentials")
     if user["is_banned"]:

@@ -297,11 +297,51 @@ input[type="checkbox"] {
 .toast.error { border-color: var(--red); }
 
 /* BULK BAR */
-.bulk-bar { background: var(--accent); border-radius: var(--radius); padding: 0.8rem 1.2rem; display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; display: none; }
+.bulk-bar { background: var(--accent); border-radius: var(--radius); padding: 0.8rem 1.2rem; align-items: center; gap: 1rem; margin-bottom: 1rem; display: none; }
 .bulk-bar.show { display: flex; }
 .bulk-bar span { font-weight: 600; font-size: 0.9rem; flex: 1; }
+.bulk-bar .btn { background: rgba(0,0,0,0.25); color: #fff; border: 1px solid rgba(0,0,0,0.3); }
+.bulk-bar .btn:hover { background: rgba(0,0,0,0.45); }
+
+/* SPINNER (matches main style.css so admin has it too) */
+.spinner {
+  width: 22px; height: 22px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-center { color: var(--muted); text-align: center; padding: 2rem; display: flex; justify-content: center; }
+
+/* TOAST CONTAINER */
+.toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* DASHBOARD GRID (responsive 2-col) */
+.dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+
+/* HAMBURGER (mobile only) */
+.hamburger {
+  display: none;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  font-size: 1.1rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.sidebar-overlay { display: none; }
 
 @media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); }
+  .sidebar { transform: translateX(-100%); transition: transform 0.25s ease; }
+  .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,0.6); }
   .main { margin-left: 0; }
+  .hamburger { display: inline-flex; }
+  .dashboard-grid { grid-template-columns: 1fr; }
+  .content { padding: 1.2rem; }
+  .topbar { padding: 0 1.2rem; }
 }

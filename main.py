@@ -1,7 +1,7 @@
-from fastapi import FastAPI, Request
-from fastapi.staticfiles import StaticFiles
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from pathlib import Path
 from users import router as users_router
 from coupons import router as coupons_router
 from admin import router as admin_router
@@ -10,22 +10,22 @@ from database import connection_pool
 app = FastAPI(title="Coupon Share API")
 
 # CORS middleware for local development
+# Note: allow_credentials must stay False with a wildcard origin (spec-invalid combo).
+# Auth uses the Authorization header, not cookies, so credentials are not needed.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
+# Include routers FIRST so /api/* routes are matched before any catch-all
 app.include_router(users_router)
 app.include_router(coupons_router)
 app.include_router(admin_router)
 
-# Mount static files at root and enable HTML mode so index.html is served
-# Static files are mounted after routers so API routes still take precedence.
-# Static platform list for frontend
+# ── Static API data ──────────────────────────────────────────────
 @app.get("/api/platforms")
 async def get_platforms():
     """Return list of popular platforms"""
@@ -48,9 +48,7 @@ async def get_platforms():
     ]
     return {"platforms": platforms}
 
-# Wait, coupons.py already has a /categories endpoint. Let's make sure it doesn't conflict, 
-# or we use the dynamic one. coupons.py has /api/coupons/categories.
-# The frontend uses /api/categories for submit form, so we keep this one too.
+# Single source of truth for categories — used by submit form AND browse chips
 @app.get("/api/categories")
 async def get_categories():
     categories = [
@@ -61,6 +59,31 @@ async def get_categories():
     ]
     return {"categories": categories}
 
-# Mount static files at root and enable HTML mode so index.html is served
-# Place this after all API route definitions so API routes take precedence.
-app.mount("/", StaticFiles(directory=".", html=True), name="static")
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+
+# ── Static file serving (registered LAST so it never shadows APIs) ──
+BASE_DIR = Path(__file__).resolve().parent
+ALLOWED_STATIC_EXT = {".html", ".css", ".js", ".svg", ".png", ".ico"}
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    return FileResponse(BASE_DIR / "index.html")
+
+@app.get("/{page}.html", response_class=HTMLResponse)
+async def serve_html(page: str):
+    file = BASE_DIR / f"{page}.html"
+    if not file.is_file():
+        raise HTTPException(404)
+    return FileResponse(file)
+
+@app.get("/{asset_path:path}")
+async def serve_asset(asset_path: str):
+    """Serve only public assets (.css/.js/etc). Never exposes .env, .py, .db…"""
+    file = (BASE_DIR / asset_path).resolve()
+    if BASE_DIR not in file.parents or not file.is_file():
+        raise HTTPException(404)
+    if file.suffix.lower() not in ALLOWED_STATIC_EXT:
+        raise HTTPException(404)
+    return FileResponse(file)

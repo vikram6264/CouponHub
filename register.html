@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Register — CouponShare</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="auth-page">
   <div class="auth-box">
-    <a href="index.html" class="nav-brand" style="display:block;margin-bottom:1.5rem">Coupon<span>Share</span></a>
+    <a href="index.html" class="nav-brand" style="display:block;margin-bottom:1.5rem;font-family:'DM Sans',sans-serif;font-size:22px;font-weight:600;text-decoration:none;color:var(--purple)">Coupon<span style="color:var(--green)">Share</span></a>
     <h2>Create account</h2>
     <p class="subtitle">Join thousands of savvy shoppers sharing deals</p>
 
@@ -16,16 +17,27 @@
 
     <form id="reg-form">
       <div class="form-group">
-        <label>Full Name</label>
-        <input type="text" id="name" placeholder="Your name" required minlength="2">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" placeholder="Your name" required minlength="2" maxlength="100" autocomplete="name">
       </div>
       <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="email" placeholder="you@example.com" required>
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
       </div>
       <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="password" placeholder="Min 6 characters" required minlength="6">
+        <label for="password">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" placeholder="Min 6 characters" required minlength="6" maxlength="128" autocomplete="new-password">
+          <button type="button" class="pw-toggle" tabindex="-1" onclick="togglePw('password', this)" aria-label="Show password">👁</button>
+        </div>
+        <div class="pw-hint" id="pw-hint">Use at least 6 characters</div>
+      </div>
+      <div class="form-group">
+        <label for="password2">Confirm Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="password2" placeholder="Repeat password" required autocomplete="new-password">
+          <button type="button" class="pw-toggle" tabindex="-1" onclick="togglePw('password2', this)" aria-label="Show password">👁</button>
+        </div>
       </div>
       <button type="submit" class="btn btn-primary btn-full">Create Account</button>
     </form>
@@ -39,20 +51,41 @@
 <script src="api.js"></script>
 <script src="auth.js"></script>
 <script>
+function togglePw(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? '👁' : '🙈';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   if (isLoggedIn()) { window.location.href = 'browse.html'; return; }
+
+  const pw = document.getElementById('password');
+  const hint = document.getElementById('pw-hint');
+  pw.addEventListener('input', () => {
+    if (pw.value.length === 0) { hint.textContent = 'Use at least 6 characters'; hint.className = 'pw-hint'; }
+    else if (pw.value.length < 6) { hint.textContent = 'Too short — ' + pw.value.length + '/6'; hint.className = 'pw-hint weak'; }
+    else { hint.textContent = 'Password looks good'; hint.className = 'pw-hint ok'; }
+  });
 
   document.getElementById('reg-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     hideAlert('form-alert');
-    const btn = e.target.querySelector('button');
+    const btn = e.target.querySelector('button[type="submit"]');
+
+    if (pw.value !== document.getElementById('password2').value) {
+      showAlert('form-alert', 'Passwords do not match');
+      return;
+    }
+
     btn.disabled = true; btn.innerHTML = '<div class="spinner"></div> Creating...';
 
     try {
       await Auth.register({
         name: document.getElementById('name').value.trim(),
-        email: document.getElementById('email').value,
-        password: document.getElementById('password').value
+        email: document.getElementById('email').value.trim(),
+        password: pw.value
       });
       showAlert('form-alert', '✓ Account created! Redirecting to login...', 'success');
       setTimeout(() => window.location.href = 'login.html', 1500);
